@@ -1,0 +1,88 @@
+"""DSPy RLM program that turns an Instagram export into a TasteProfile."""
+from __future__ import annotations
+
+import os
+
+import dspy
+
+from . import qloo
+from .data import load_music, load_posts, load_summary, posts_with_tag, search_posts
+from .qloo import qloo_related, qloo_search
+from .schemas import TasteProfile
+
+TOOLS = [search_posts, posts_with_tag, qloo_search, qloo_related]
+
+INSTRUCTIONS = """\
+You are a taste analyst. From a person's saved/liked Instagram posts and saved music, build a TasteProfile
+that will later be used to furnish and decorate their room.
+
+Inputs (all available as Python variables in the sandbox; explore them with code, do not print everything):
+- posts_overview: dict of counts, top hashtags, top owners, music artists.
+- posts: list of ~1000 post dicts {id, source, date, owner, caption, hashtags, url}.
+- music: list of {title, artists}. For film songs, the listed "artists" often include actors; treat those
+  actors as signals of FILM taste (the film itself), not music taste.
+
+Method:
+1. Ignore memes, jokes, news, and one-off noise (e.g. #funny, #meme). Look for durable taste themes that
+   recur across many posts and owners (hobbies, places, media, design, fashion, food, music).
+2. Use code over `posts` (counting, grouping hashtags/owners, keyword search) and the search_posts /
+   posts_with_tag tools to size each theme and collect example post ids.
+3. Draft candidate entities (artists, films, shows, brands, places, designers). VERIFY every candidate with
+   qloo_search before including it; use the qloo_id and canonical name it returns. Drop candidates that
+   Qloo does not return. Keep Qloo calls economical (there is a per-run cap) and batch your thinking first.
+4. Use qloo_related on your strongest verified entities to expand into brands, designers and aesthetics that
+   are relevant to interiors and furnishing (domain "brand" / "designer" / "place").
+5. Evidence for each entity must be short and cite post ids or an artist from music. Confidence is 0-1 and
+   should reflect how durable the signal is (many posts = high, a single post = low).
+6. style_summary: 2-3 sentences describing the person's likely interior/visual taste, grounded in the themes.
+   aesthetic_tags: short plain-language visual/interior descriptors (2-4 words each), derived from the evidence.
+Finish by calling SUBMIT(profile=...) with a valid TasteProfile.
+"""
+
+
+class ExtractTaste(dspy.Signature):
+    posts_overview: dict = dspy.InputField(desc="Summary stats of the export: counts, top hashtags/owners, music artists.")
+    posts: list[dict] = dspy.InputField(desc="All saved/liked posts: id, source, date, owner, caption, hashtags, url.")
+    music: list[dict] = dspy.InputField(desc="Saved music: title and artists (film-song 'artists' may be actors).")
+    profile: TasteProfile = dspy.OutputField(desc="The person's taste profile, with Qloo-verified entities.")
+
+
+ExtractTaste.__doc__ = INSTRUCTIONS
+
+
+def configure_lms() -> tuple[dspy.LM, dspy.LM]:
+    """Create LMs from env: PTAH_LM (required), PTAH_SUB_LM (optional, defaults to PTAH_LM)."""
+    main = os.environ.get("PTAH_LM")
+    if not main:
+        raise SystemExit(
+            "PTAH_LM is not set. Set it to a litellm-style model string, e.g. "
+            "export PTAH_LM='anthropic/<model-name>' (and the provider key, e.g. ANTHROPIC_API_KEY). "
+            "Optionally set PTAH_SUB_LM to a cheaper model for sub-queries."
+        )
+    lm = dspy.LM(main)
+    sub_lm = dspy.LM(os.environ.get("PTAH_SUB_LM") or main)
+    dspy.configure(lm=lm)
+    return lm, sub_lm
+
+
+def build_program(sub_lm: dspy.LM | None = None) -> dspy.RLM:
+    """Build the RLM program. Iteration limits can be overridden via PTAH_MAX_ITERS / PTAH_MAX_LLM_CALLS."""
+    return dspy.RLM(
+        ExtractTaste,
+        max_iters=int(os.environ.get("PTAH_MAX_ITERS", 20)),
+        max_llm_calls=int(os.environ.get("PTAH_MAX_LLM_CALLS", 50)),
+        tools=TOOLS,
+        sub_lm=sub_lm,
+    )
+
+
+def inputs() -> dict:
+    return {"posts_overview": load_summary(), "posts": load_posts(), "music": load_music()}
+
+
+def extract_taste(qloo_call_cap: int = qloo.DEFAULT_CALL_CAP) -> TasteProfile:
+    """Run the full extraction (makes real LLM calls)."""
+    _, sub_lm = configure_lms()
+    qloo.reset(qloo_call_cap)
+    result = build_program(sub_lm)(**inputs())
+    return result.profile

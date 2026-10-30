@@ -1,0 +1,6 @@
+dspy==3.4.1  # dspy.RLM requires >=3.1.2
+pydantic>=2.6
+pillow>=10.0
+numpy>=1.26
+matplotlib>=3.7  # tools/render_layout.py only
+pytest>=8  # tests

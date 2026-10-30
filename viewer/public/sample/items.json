@@ -1,0 +1,859 @@
+[
+  {
+    "id": "sofa-1",
+    "category": "sofa",
+    "name": "Sample compact 3-seat sofa",
+    "w": 170,
+    "d": 92,
+    "h": 82,
+    "dims_estimated": false,
+    "image": null,
+    "price": "$899",
+    "url": null,
+    "why": "sample item",
+    "model": {
+      "template": "sofa",
+      "params": {
+        "arms": true,
+        "legs": "tapered",
+        "seats": 3
+      }
+    },
+    "colors": {
+      "primary": "#8a8f7a",
+      "secondary": "#d9d2c3",
+      "accent": null
+    },
+    "material": {
+      "primary": "boucle",
+      "secondary": "oak"
+    }
+  },
+  {
+    "id": "table-1",
+    "category": "coffee_table",
+    "name": "Sample coffee table",
+    "w": 110,
+    "d": 60,
+    "h": 42,
+    "dims_estimated": false,
+    "image": null,
+    "price": "$249",
+    "url": null,
+    "why": "sample item",
+    "model": {
+      "template": "coffee_table",
+      "params": {
+        "shape": "rect",
+        "legs": "straight"
+      }
+    },
+    "colors": {
+      "primary": "#b98d62",
+      "secondary": "#2b2b2b",
+      "accent": null
+    },
+    "material": {
+      "primary": "oak",
+      "secondary": "black_metal"
+    }
+  },
+  {
+    "id": "rug-1",
+    "category": "rug",
+    "name": "Sample rug",
+    "w": 200,
+    "d": 140,
+    "h": 1,
+    "dims_estimated": false,
+    "image": null,
+    "price": "$199",
+    "url": null,
+    "why": "sample item",
+    "model": {
+      "template": "rug",
+      "params": {
+        "shape": "rect"
+      }
+    },
+    "colors": {
+      "primary": "#e4dccb",
+      "secondary": "#b9ac94",
+      "accent": null
+    },
+    "material": {
+      "primary": "wool",
+      "secondary": null
+    }
+  },
+  {
+    "id": "lamp-1",
+    "category": "floor_lamp",
+    "name": "Sample floor lamp",
+    "w": 40,
+    "d": 40,
+    "h": 160,
+    "dims_estimated": true,
+    "image": null,
+    "price": "$129",
+    "url": null,
+    "why": "sample item",
+    "model": {
+      "template": "floor_lamp",
+      "params": {
+        "shade": "dome",
+        "legs": "none",
+        "arc": false
+      }
+    },
+    "colors": {
+      "primary": "#2b2b2b",
+      "secondary": "#efe6d2",
+      "accent": null
+    },
+    "material": {
+      "primary": "black_metal",
+      "secondary": "linen"
+    },
+    "light": {
+      "layer": "task",
+      "kind": "point",
+      "color_temp_k": 2700,
+      "lumens": 1600,
+      "dimmable": true,
+      "rgb": null,
+      "emit_offset": [
+        0,
+        150,
+        0
+      ]
+    }
+  },
+  {
+    "id": "shelf-1",
+    "category": "bookshelf",
+    "name": "Sample bookshelf",
+    "w": 80,
+    "d": 32,
+    "h": 180,
+    "dims_estimated": false,
+    "image": null,
+    "price": "$179",
+    "url": null,
+    "why": "sample item",
+    "model": {
+      "template": "bookshelf",
+      "params": {
+        "shelves": 5,
+        "doors": false,
+        "legs": "none"
+      }
+    },
+    "colors": {
+      "primary": "#b98d62",
+      "secondary": null,
+      "accent": null
+    },
+    "material": {
+      "primary": "oak",
+      "secondary": null
+    }
+  },
+  {
+    "id": "plant-1",
+    "category": "plant",
+    "name": "Sample floor plant",
+    "w": 45,
+    "d": 45,
+    "h": 120,
+    "dims_estimated": true,
+    "image": null,
+    "price": "$59",
+    "url": null,
+    "why": "sample item",
+    "model": {
+      "template": "plant",
+      "params": {
+        "kind": "tree",
+        "pot": "round"
+      }
+    },
+    "colors": {
+      "primary": "#4f6b45",
+      "secondary": "#a86f4c",
+      "accent": null
+    },
+    "material": {
+      "primary": "ceramic",
+      "secondary": null
+    }
+  },
+  {
+    "id": "side-1",
+    "category": "side_table",
+    "name": "Sample round side table",
+    "w": 45,
+    "d": 45,
+    "h": 50,
+    "price": "$89",
+    "model": {
+      "template": "side_table",
+      "params": {
+        "shape": "round",
+        "legs": "tapered"
+      }
+    },
+    "colors": {
+      "primary": "#a0724a",
+      "secondary": null,
+      "accent": null
+    },
+    "material": {
+      "primary": "walnut",
+      "secondary": null
+    },
+    "dims_estimated": false,
+    "image": null,
+    "url": null,
+    "why": "sample item"
+  },
+  {
+    "id": "lamp-2",
+    "category": "table_lamp",
+    "name": "Sample drum-shade table lamp",
+    "w": 26,
+    "d": 26,
+    "h": 42,
+    "price": "$59",
+    "dims_estimated": true,
+    "model": {
+      "template": "table_lamp",
+      "params": {
+        "shade": "drum",
+        "legs": "none"
+      }
+    },
+    "colors": {
+      "primary": "#e9dcc4",
+      "secondary": "#c9a45c",
+      "accent": null
+    },
+    "material": {
+      "primary": "linen",
+      "secondary": "brass"
+    },
+    "light": {
+      "layer": "accent",
+      "kind": "point",
+      "color_temp_k": 2400,
+      "lumens": 450,
+      "dimmable": true,
+      "rgb": null,
+      "emit_offset": [
+        0,
+        34,
+        0
+      ]
+    },
+    "image": null,
+    "url": null,
+    "why": "sample item"
+  },
+  {
+    "id": "pendant-1",
+    "category": "pendant",
+    "name": "Sample 3-bulb globe pendant light",
+    "w": 40,
+    "d": 40,
+    "h": 40,
+    "price": "$119",
+    "dims_estimated": true,
+    "model": {
+      "template": "pendant",
+      "params": {
+        "shade": "globe"
+      }
+    },
+    "colors": {
+      "primary": "#f4efe4",
+      "secondary": "#2b2b2b",
+      "accent": null
+    },
+    "material": {
+      "primary": "glass",
+      "secondary": "black_metal"
+    },
+    "light": {
+      "layer": "ambient",
+      "kind": "point",
+      "color_temp_k": 2700,
+      "lumens": 2400,
+      "dimmable": true,
+      "rgb": null,
+      "emit_offset": [
+        0,
+        20,
+        0
+      ]
+    },
+    "image": null,
+    "url": null,
+    "why": "sample item"
+  },
+  {
+    "id": "strip-1",
+    "category": "led_strip",
+    "name": "Sample warm LED strip, 80 cm",
+    "w": 80,
+    "d": 2,
+    "h": 2,
+    "price": "$24",
+    "dims_estimated": true,
+    "model": {
+      "template": "led_strip",
+      "params": {}
+    },
+    "colors": {
+      "primary": "#ffd9a0",
+      "secondary": null,
+      "accent": null
+    },
+    "material": {
+      "primary": "plastic",
+      "secondary": null
+    },
+    "light": {
+      "layer": "accent",
+      "kind": "line",
+      "color_temp_k": 2700,
+      "lumens": 360,
+      "dimmable": true,
+      "rgb": null,
+      "emit_offset": [
+        0,
+        1,
+        0
+      ]
+    },
+    "image": null,
+    "url": null,
+    "why": "sample item"
+  },
+  {
+    "id": "art-1",
+    "category": "art",
+    "name": "Sample framed landscape print",
+    "w": 90,
+    "d": 4,
+    "h": 60,
+    "price": "$75",
+    "model": {
+      "template": "art",
+      "params": {
+        "frame": "framed"
+      }
+    },
+    "colors": {
+      "primary": "#7d8f8a",
+      "secondary": "#d8c9a8",
+      "accent": "#b5533c"
+    },
+    "material": {
+      "primary": "light_wood",
+      "secondary": "glass"
+    },
+    "dims_estimated": false,
+    "image": null,
+    "url": null,
+    "why": "sample item"
+  },
+  {
+    "id": "plight-1",
+    "category": "picture_light",
+    "name": "Sample brass picture light",
+    "w": 30,
+    "d": 12,
+    "h": 8,
+    "price": "$45",
+    "dims_estimated": true,
+    "model": {
+      "template": "picture_light",
+      "params": {
+        "arm": true
+      }
+    },
+    "colors": {
+      "primary": "#c9a45c",
+      "secondary": null,
+      "accent": null
+    },
+    "material": {
+      "primary": "brass",
+      "secondary": null
+    },
+    "light": {
+      "layer": "accent",
+      "kind": "spot",
+      "color_temp_k": 2700,
+      "lumens": 300,
+      "dimmable": false,
+      "rgb": null,
+      "cone_deg": 40,
+      "emit_offset": [
+        0,
+        4,
+        6
+      ]
+    },
+    "image": null,
+    "url": null,
+    "why": "sample item"
+  },
+  {
+    "id": "sconce-1",
+    "category": "sconce",
+    "name": "Sample dome wall sconce",
+    "w": 16,
+    "d": 16,
+    "h": 24,
+    "price": "$69",
+    "dims_estimated": true,
+    "model": {
+      "template": "sconce",
+      "params": {
+        "shade": "dome"
+      }
+    },
+    "colors": {
+      "primary": "#c9a45c",
+      "secondary": "#f4efe4",
+      "accent": null
+    },
+    "material": {
+      "primary": "brass",
+      "secondary": "glass"
+    },
+    "light": {
+      "layer": "accent",
+      "kind": "point",
+      "color_temp_k": 2700,
+      "lumens": 350,
+      "dimmable": true,
+      "rgb": null,
+      "emit_offset": [
+        0,
+        15,
+        6
+      ]
+    },
+    "image": null,
+    "url": null,
+    "why": "sample item"
+  },
+  {
+    "id": "guitar-1",
+    "category": "guitar",
+    "name": "Ibanez Roadstar RG140 (1987)",
+    "w": 33,
+    "d": 6,
+    "h": 98,
+    "dims_estimated": true,
+    "image": null,
+    "price": null,
+    "url": null,
+    "owned": true,
+    "focal": true,
+    "why": "Yours. Hangs on the wall as the focal point of the music corner. Size estimated: 33 cm across the body, about 98 cm long, 6 cm deep.",
+    "model": {
+      "template": "guitar",
+      "params": {
+        "body": "superstrat",
+        "mount": "wall_hanger"
+      }
+    },
+    "colors": {
+      "primary": "#d6cbb0",
+      "secondary": "#5a3a2a",
+      "accent": "#222222"
+    },
+    "user_colors": {
+      "primary": "#e9dfc8",
+      "secondary": "#4a2f22",
+      "accent": "#111113"
+    },
+    "material": {
+      "primary": "painted",
+      "secondary": "dark_wood"
+    }
+  },
+  {
+    "id": "amp-1",
+    "category": "amp",
+    "name": "Kawai A-15 practice amp",
+    "w": 38,
+    "d": 22,
+    "h": 34,
+    "dims_estimated": true,
+    "image": null,
+    "price": null,
+    "url": null,
+    "owned": true,
+    "why": "Yours. Small combo amp, black tolex with a dark grille. Size estimated.",
+    "model": {
+      "template": "amp",
+      "params": {}
+    },
+    "colors": {
+      "primary": "#161617",
+      "secondary": "#2b2a2c",
+      "accent": null
+    },
+    "material": {
+      "primary": "painted",
+      "secondary": "plastic"
+    }
+  },
+  {
+    "image": null,
+    "url": null,
+    "dims_estimated": true,
+    "why": "sample item",
+    "id": "hanger-1",
+    "category": "guitar_hanger",
+    "name": "Sample wall guitar hanger",
+    "w": 10,
+    "d": 6,
+    "h": 14,
+    "price": "$12",
+    "model": {
+      "template": "guitar_hanger",
+      "params": {}
+    },
+    "colors": {
+      "primary": "#1e1f21",
+      "secondary": null,
+      "accent": null
+    },
+    "material": {
+      "primary": "black_metal",
+      "secondary": null
+    }
+  },
+  {
+    "image": null,
+    "url": null,
+    "dims_estimated": true,
+    "why": "sample item",
+    "id": "spot-1",
+    "category": "picture_light",
+    "name": "Sample LED picture light (guitar spotlight)",
+    "w": 26,
+    "d": 12,
+    "h": 7,
+    "price": "$38",
+    "model": {
+      "template": "picture_light",
+      "params": {
+        "arm": true
+      }
+    },
+    "colors": {
+      "primary": "#2b2b2b",
+      "secondary": null,
+      "accent": null
+    },
+    "material": {
+      "primary": "black_metal",
+      "secondary": null
+    },
+    "light": {
+      "layer": "accent",
+      "kind": "spot",
+      "color_temp_k": 2700,
+      "lumens": 110,
+      "dimmable": true,
+      "rgb": null,
+      "cone_deg": 55,
+      "target": "guitar-1",
+      "emit_offset": [
+        0,
+        3,
+        5
+      ],
+      "angle_deg": 55,
+      "direction": [
+        0,
+        -0.92,
+        -0.38
+      ]
+    }
+  },
+  {
+    "image": null,
+    "url": null,
+    "dims_estimated": false,
+    "why": "sample item",
+    "id": "cushion-1",
+    "category": "cushion",
+    "name": "Sample terracotta velvet cushion",
+    "w": 40,
+    "d": 14,
+    "h": 40,
+    "price": "$24",
+    "model": {
+      "template": "cushion",
+      "params": {}
+    },
+    "colors": {
+      "primary": "#b5533c",
+      "secondary": null,
+      "accent": null
+    },
+    "material": {
+      "primary": "velvet",
+      "secondary": null
+    }
+  },
+  {
+    "image": null,
+    "url": null,
+    "dims_estimated": false,
+    "why": "sample item",
+    "id": "cushion-2",
+    "category": "cushion",
+    "name": "Sample oat linen cushion",
+    "w": 40,
+    "d": 14,
+    "h": 40,
+    "price": "$22",
+    "model": {
+      "template": "cushion",
+      "params": {}
+    },
+    "colors": {
+      "primary": "#d9cdb0",
+      "secondary": "#8a8f7a",
+      "accent": null
+    },
+    "material": {
+      "primary": "linen",
+      "secondary": null
+    }
+  },
+  {
+    "image": null,
+    "url": null,
+    "dims_estimated": false,
+    "why": "sample item",
+    "id": "throw-1",
+    "category": "throw",
+    "name": "Sample wool throw blanket",
+    "w": 46,
+    "d": 44,
+    "h": 3,
+    "price": "$49",
+    "model": {
+      "template": "throw",
+      "params": {
+        "drape": "right"
+      }
+    },
+    "colors": {
+      "primary": "#8a6f55",
+      "secondary": "#e6dcc8",
+      "accent": null
+    },
+    "material": {
+      "primary": "wool",
+      "secondary": null
+    }
+  },
+  {
+    "image": null,
+    "url": null,
+    "dims_estimated": true,
+    "why": "sample item",
+    "id": "book-stack-1",
+    "category": "book_stack",
+    "name": "Sample stack of books",
+    "w": 24,
+    "d": 17,
+    "h": 12,
+    "price": "$30",
+    "model": {
+      "template": "book_stack",
+      "params": {
+        "count": 5
+      }
+    },
+    "colors": {
+      "primary": "#2f4858",
+      "secondary": "#b85c38",
+      "accent": "#d9b26f"
+    },
+    "material": {
+      "primary": "painted",
+      "secondary": null
+    }
+  },
+  {
+    "image": null,
+    "url": null,
+    "dims_estimated": false,
+    "why": "sample item",
+    "id": "vase-1",
+    "category": "vase",
+    "name": "Sample glazed ceramic vase",
+    "w": 12,
+    "d": 12,
+    "h": 24,
+    "price": "$36",
+    "model": {
+      "template": "vase",
+      "params": {
+        "form": "bottle"
+      }
+    },
+    "colors": {
+      "primary": "#4d6b5a",
+      "secondary": null,
+      "accent": null
+    },
+    "material": {
+      "primary": "ceramic",
+      "secondary": null
+    }
+  },
+  {
+    "image": null,
+    "url": null,
+    "dims_estimated": true,
+    "why": "sample item",
+    "id": "vinyl-crate-1",
+    "category": "vinyl_crate",
+    "name": "Sample wooden record crate",
+    "w": 33,
+    "d": 26,
+    "h": 28,
+    "price": "$45",
+    "model": {
+      "template": "vinyl_crate",
+      "params": {}
+    },
+    "colors": {
+      "primary": "#b98d62",
+      "secondary": "#2f4858",
+      "accent": "#b5533c"
+    },
+    "material": {
+      "primary": "light_wood",
+      "secondary": null
+    }
+  },
+  {
+    "image": null,
+    "url": null,
+    "dims_estimated": false,
+    "why": "sample item",
+    "id": "tray-1",
+    "category": "tray",
+    "name": "Sample walnut serving tray",
+    "w": 34,
+    "d": 22,
+    "h": 3,
+    "price": "$32",
+    "model": {
+      "template": "tray",
+      "params": {}
+    },
+    "colors": {
+      "primary": "#6a4833",
+      "secondary": null,
+      "accent": null
+    },
+    "material": {
+      "primary": "walnut",
+      "secondary": null
+    }
+  },
+  {
+    "image": null,
+    "url": null,
+    "dims_estimated": false,
+    "why": "sample item",
+    "id": "candle-1",
+    "category": "candle",
+    "name": "Sample pillar candle",
+    "w": 8,
+    "d": 8,
+    "h": 10,
+    "price": "$14",
+    "model": {
+      "template": "candle",
+      "params": {}
+    },
+    "colors": {
+      "primary": "#efe6d2",
+      "secondary": null,
+      "accent": null
+    },
+    "material": {
+      "primary": "painted",
+      "secondary": null
+    }
+  },
+  {
+    "image": null,
+    "url": null,
+    "dims_estimated": true,
+    "why": "sample item",
+    "id": "plant-2",
+    "category": "small_plant",
+    "name": "Sample small potted plant",
+    "w": 11,
+    "d": 11,
+    "h": 22,
+    "price": "$18",
+    "model": {
+      "template": "small_plant",
+      "params": {}
+    },
+    "colors": {
+      "primary": "#5a8a5e",
+      "secondary": "#c9b8a0",
+      "accent": null
+    },
+    "material": {
+      "primary": "ceramic",
+      "secondary": null
+    }
+  },
+  {
+    "image": null,
+    "url": null,
+    "dims_estimated": false,
+    "why": "sample item",
+    "id": "poster-1",
+    "category": "poster",
+    "name": "Sample framed poster",
+    "w": 50,
+    "d": 3,
+    "h": 70,
+    "price": "$28",
+    "model": {
+      "template": "poster",
+      "params": {
+        "frame": "thin"
+      }
+    },
+    "colors": {
+      "primary": "#e4ddd0",
+      "secondary": "#2b2b2b",
+      "accent": "#b5533c"
+    },
+    "material": {
+      "primary": "black_metal",
+      "secondary": null
+    }
+  }
+]

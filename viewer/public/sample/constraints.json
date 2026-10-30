@@ -1,0 +1,315 @@
+{
+ "sofa-1": {
+  "anchor": true,
+  "hint": {
+   "x": 46,
+   "z": 178,
+   "rotation_deg": 90
+  },
+  "constraints": [
+   {
+    "type": "edge"
+   },
+   {
+    "type": "face",
+    "target": "room_center"
+   }
+  ]
+ },
+ "table-1": {
+  "zone": "conversation",
+  "constraints": [
+   {
+    "type": "middle"
+   },
+   {
+    "type": "in_front_of",
+    "target": "sofa-1"
+   },
+   {
+    "type": "near",
+    "target": "sofa-1"
+   },
+   {
+    "type": "center_align",
+    "target": "sofa-1"
+   }
+  ]
+ },
+ "rug-1": {
+  "zone": "conversation",
+  "constraints": [
+   {
+    "type": "under",
+    "target": "table-1"
+   }
+  ]
+ },
+ "lamp-1": {
+  "zone": "conversation",
+  "constraints": [
+   {
+    "type": "side_of",
+    "target": "sofa-1"
+   },
+   {
+    "type": "near",
+    "target": "sofa-1"
+   }
+  ]
+ },
+ "shelf-1": {
+  "constraints": [
+   {
+    "type": "edge"
+   },
+   {
+    "type": "far",
+    "target": "sofa-1"
+   }
+  ]
+ },
+ "plant-1": {
+  "constraints": [
+   {
+    "type": "edge"
+   },
+   {
+    "type": "near",
+    "target": "win1"
+   }
+  ]
+ },
+ "side-1": {
+  "zone": "conversation",
+  "constraints": [
+   {
+    "type": "side_of",
+    "target": "sofa-1"
+   },
+   {
+    "type": "near",
+    "target": "sofa-1"
+   }
+  ]
+ },
+ "lamp-2": {
+  "constraints": [
+   {
+    "type": "on_top_of",
+    "target": "side-1",
+    "surface": "top"
+   }
+  ]
+ },
+ "pendant-1": {
+  "constraints": [
+   {
+    "type": "ceiling",
+    "above": "table-1",
+    "drop": 40
+   }
+  ]
+ },
+ "strip-1": {
+  "constraints": [
+   {
+    "type": "attach_to",
+    "target": "shelf-1",
+    "side": "back"
+   }
+  ]
+ },
+ "art-1": {
+  "constraints": [
+   {
+    "type": "wall_mounted",
+    "height": 120
+   },
+   {
+    "type": "center_align",
+    "target": "sofa-1"
+   },
+   {
+    "type": "near",
+    "target": "sofa-1"
+   }
+  ]
+ },
+ "plight-1": {
+  "constraints": [
+   {
+    "type": "attach_to",
+    "target": "art-1",
+    "side": "above"
+   }
+  ]
+ },
+ "sconce-1": {
+  "constraints": [
+   {
+    "type": "wall_mounted",
+    "height": 150
+   },
+   {
+    "type": "near",
+    "target": "plant-1"
+   },
+   {
+    "type": "center_align",
+    "target": "plant-1"
+   }
+  ]
+ },
+ "amp-1": {
+  "zone": "music_corner",
+  "hint": {
+   "x": 409,
+   "z": 150,
+   "rotation_deg": 270
+  },
+  "constraints": [
+   {
+    "type": "edge"
+   },
+   {
+    "type": "near",
+    "target": "guitar-1"
+   }
+  ]
+ },
+ "guitar-1": {
+  "zone": "music_corner",
+  "constraints": [
+   {
+    "type": "wall_mounted",
+    "height": 100
+   },
+   {
+    "type": "center_align",
+    "target": "amp-1"
+   },
+   {
+    "type": "near",
+    "target": "amp-1"
+   }
+  ]
+ },
+ "hanger-1": {
+  "constraints": [
+   {
+    "type": "attach_to",
+    "target": "guitar-1",
+    "side": "back",
+    "height": 168
+   }
+  ]
+ },
+ "spot-1": {
+  "constraints": [
+   {
+    "type": "attach_to",
+    "target": "guitar-1",
+    "side": "above"
+   }
+  ]
+ },
+ "cushion-1": {
+  "constraints": [
+   {
+    "type": "on_top_of",
+    "target": "sofa-1",
+    "surface": "seat"
+   }
+  ]
+ },
+ "cushion-2": {
+  "constraints": [
+   {
+    "type": "on_top_of",
+    "target": "sofa-1",
+    "surface": "seat"
+   }
+  ]
+ },
+ "throw-1": {
+  "constraints": [
+   {
+    "type": "on_top_of",
+    "target": "sofa-1",
+    "surface": "seat"
+   }
+  ]
+ },
+ "vinyl-crate-1": {
+  "constraints": [
+   {
+    "type": "on_top_of",
+    "target": "shelf-1",
+    "level": 0
+   }
+  ]
+ },
+ "book-stack-1": {
+  "constraints": [
+   {
+    "type": "on_top_of",
+    "target": "shelf-1",
+    "level": 2
+   }
+  ]
+ },
+ "vase-1": {
+  "constraints": [
+   {
+    "type": "on_top_of",
+    "target": "shelf-1",
+    "level": 2
+   }
+  ]
+ },
+ "tray-1": {
+  "constraints": [
+   {
+    "type": "on_top_of",
+    "target": "table-1",
+    "surface": "top"
+   }
+  ]
+ },
+ "candle-1": {
+  "constraints": [
+   {
+    "type": "on_top_of",
+    "target": "tray-1",
+    "surface": "top"
+   }
+  ]
+ },
+ "plant-2": {
+  "constraints": [
+   {
+    "type": "on_top_of",
+    "target": "side-1",
+    "surface": "top"
+   }
+  ]
+ },
+ "poster-1": {
+  "constraints": [
+   {
+    "type": "wall_mounted",
+    "height": 115,
+    "wall": "w1"
+   },
+   {
+    "type": "far",
+    "target": "guitar-1"
+   }
+  ],
+  "hint": {
+   "x": 200,
+   "z": 0
+  }
+ }
+}

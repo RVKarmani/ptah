@@ -1,0 +1,406 @@
+{
+  "room": "room.json",
+  "placements": [
+    {
+      "item_id": "sofa-1",
+      "x": 46.0,
+      "z": 180.0,
+      "rotation_deg": 90,
+      "satisfied": [
+        "edge",
+        "face",
+        "hint"
+      ],
+      "violated": [],
+      "y": 0
+    },
+    {
+      "item_id": "table-1",
+      "x": 157.0,
+      "z": 180.0,
+      "rotation_deg": 90,
+      "satisfied": [
+        "middle",
+        "in_front_of:sofa-1",
+        "near:sofa-1",
+        "center_align:sofa-1",
+        "ergo:table_gap",
+        "zone:conversation"
+      ],
+      "violated": [],
+      "y": 0
+    },
+    {
+      "item_id": "rug-1",
+      "x": 157.0,
+      "z": 180.0,
+      "rotation_deg": 180,
+      "satisfied": [
+        "under:table-1",
+        "zone:conversation"
+      ],
+      "violated": [],
+      "y": 0
+    },
+    {
+      "item_id": "lamp-1",
+      "x": 20.0,
+      "z": 288.0,
+      "rotation_deg": 90,
+      "satisfied": [
+        "side_of:sofa-1",
+        "near:sofa-1",
+        "ergo:tall_wall",
+        "ergo:window_light",
+        "zone:conversation"
+      ],
+      "violated": [],
+      "y": 0
+    },
+    {
+      "item_id": "shelf-1",
+      "x": 325.0,
+      "z": 16.0,
+      "rotation_deg": 0,
+      "satisfied": [
+        "edge",
+        "far:sofa-1",
+        "ergo:window_light"
+      ],
+      "violated": [],
+      "y": 0
+    },
+    {
+      "item_id": "plant-1",
+      "x": 107.5,
+      "z": 337.5,
+      "rotation_deg": 180,
+      "satisfied": [
+        "edge",
+        "near:win1",
+        "ergo:window_light"
+      ],
+      "violated": [],
+      "y": 0
+    },
+    {
+      "item_id": "side-1",
+      "x": 69.5,
+      "z": 290.5,
+      "rotation_deg": 90,
+      "satisfied": [
+        "side_of:sofa-1",
+        "near:sofa-1",
+        "zone:conversation"
+      ],
+      "violated": [],
+      "y": 0
+    },
+    {
+      "item_id": "lamp-2",
+      "x": 69.0,
+      "z": 298.0,
+      "rotation_deg": 90,
+      "y": 50,
+      "mount": "on_top_of",
+      "parent": "side-1",
+      "elevation": 50,
+      "surface": "top",
+      "satisfied": [
+        "on_top_of:side-1",
+        "surface:top"
+      ],
+      "violated": []
+    },
+    {
+      "item_id": "pendant-1",
+      "x": 157.0,
+      "z": 180.0,
+      "rotation_deg": 90,
+      "y": 180,
+      "mount": "ceiling",
+      "satisfied": [
+        "ceiling",
+        "ceiling:table-1"
+      ],
+      "violated": [],
+      "above": "table-1"
+    },
+    {
+      "item_id": "strip-1",
+      "x": 325.0,
+      "z": 1.0,
+      "rotation_deg": 0,
+      "y": 178,
+      "mount": "attach",
+      "parent": "shelf-1",
+      "side": "back",
+      "satisfied": [
+        "attach_to:shelf-1"
+      ],
+      "violated": []
+    },
+    {
+      "item_id": "art-1",
+      "x": 2.0,
+      "z": 180.0,
+      "rotation_deg": 90,
+      "y": 120,
+      "mount": "wall",
+      "wall": "w4",
+      "satisfied": [
+        "wall_mounted",
+        "center_align:sofa-1",
+        "near:sofa-1"
+      ],
+      "violated": []
+    },
+    {
+      "item_id": "plight-1",
+      "x": 6.0,
+      "z": 180.0,
+      "rotation_deg": 90,
+      "y": 183,
+      "mount": "attach",
+      "parent": "art-1",
+      "side": "above",
+      "satisfied": [
+        "attach_to:art-1"
+      ],
+      "violated": []
+    },
+    {
+      "item_id": "sconce-1",
+      "x": 107.0,
+      "z": 352.0,
+      "rotation_deg": 180,
+      "y": 150,
+      "mount": "wall",
+      "wall": "w3",
+      "satisfied": [
+        "wall_mounted",
+        "near:plant-1",
+        "center_align:plant-1"
+      ],
+      "violated": []
+    },
+    {
+      "item_id": "guitar-1",
+      "x": 417.0,
+      "z": 151.5,
+      "rotation_deg": 270,
+      "y": 100,
+      "mount": "wall",
+      "wall": "w2",
+      "satisfied": [
+        "wall_mounted",
+        "center_align:amp-1",
+        "near:amp-1",
+        "zone:music_corner"
+      ],
+      "violated": []
+    },
+    {
+      "item_id": "amp-1",
+      "x": 409.0,
+      "z": 149.0,
+      "rotation_deg": 270,
+      "satisfied": [
+        "edge",
+        "hint"
+      ],
+      "violated": [],
+      "y": 0
+    },
+    {
+      "item_id": "hanger-1",
+      "x": 417.0,
+      "z": 151.5,
+      "rotation_deg": 270,
+      "y": 168,
+      "mount": "attach",
+      "parent": "guitar-1",
+      "side": "back",
+      "satisfied": [
+        "attach_to:guitar-1"
+      ],
+      "violated": []
+    },
+    {
+      "item_id": "spot-1",
+      "x": 414.0,
+      "z": 151.5,
+      "rotation_deg": 270,
+      "y": 201,
+      "mount": "attach",
+      "parent": "guitar-1",
+      "side": "above",
+      "satisfied": [
+        "attach_to:guitar-1"
+      ],
+      "violated": []
+    },
+    {
+      "item_id": "cushion-1",
+      "x": 42.3,
+      "z": 227.2,
+      "rotation_deg": 90,
+      "y": 41,
+      "mount": "on_top_of",
+      "parent": "sofa-1",
+      "elevation": 41,
+      "surface": "seat",
+      "satisfied": [
+        "on_top_of:sofa-1",
+        "surface:seat"
+      ],
+      "violated": []
+    },
+    {
+      "item_id": "cushion-2",
+      "x": 42.3,
+      "z": 180.2,
+      "rotation_deg": 90,
+      "y": 41,
+      "mount": "on_top_of",
+      "parent": "sofa-1",
+      "elevation": 41,
+      "surface": "seat",
+      "satisfied": [
+        "on_top_of:sofa-1",
+        "surface:seat"
+      ],
+      "violated": []
+    },
+    {
+      "item_id": "throw-1",
+      "x": 63.3,
+      "z": 132.2,
+      "rotation_deg": 90,
+      "y": 41,
+      "mount": "on_top_of",
+      "parent": "sofa-1",
+      "elevation": 41,
+      "surface": "seat",
+      "satisfied": [
+        "on_top_of:sofa-1",
+        "surface:seat"
+      ],
+      "violated": []
+    },
+    {
+      "item_id": "book-stack-1",
+      "x": 307.4,
+      "z": 16.4,
+      "rotation_deg": 0,
+      "y": 75.6,
+      "mount": "on_top_of",
+      "parent": "shelf-1",
+      "elevation": 75.6,
+      "surface": "shelf",
+      "level": 2,
+      "satisfied": [
+        "on_top_of:shelf-1",
+        "surface:shelf#2"
+      ],
+      "violated": []
+    },
+    {
+      "item_id": "vase-1",
+      "x": 342.4,
+      "z": 16.4,
+      "rotation_deg": 0,
+      "y": 75.6,
+      "mount": "on_top_of",
+      "parent": "shelf-1",
+      "elevation": 75.6,
+      "surface": "shelf",
+      "level": 2,
+      "satisfied": [
+        "on_top_of:shelf-1",
+        "surface:shelf#2"
+      ],
+      "violated": []
+    },
+    {
+      "item_id": "vinyl-crate-1",
+      "x": 325.4,
+      "z": 16.4,
+      "rotation_deg": 0,
+      "y": 6,
+      "mount": "on_top_of",
+      "parent": "shelf-1",
+      "elevation": 6,
+      "surface": "shelf",
+      "level": 0,
+      "satisfied": [
+        "on_top_of:shelf-1",
+        "surface:shelf#0"
+      ],
+      "violated": []
+    },
+    {
+      "item_id": "tray-1",
+      "x": 157.0,
+      "z": 180.0,
+      "rotation_deg": 90,
+      "y": 42,
+      "mount": "on_top_of",
+      "parent": "table-1",
+      "elevation": 42,
+      "surface": "top",
+      "satisfied": [
+        "on_top_of:table-1",
+        "surface:top"
+      ],
+      "violated": []
+    },
+    {
+      "item_id": "candle-1",
+      "x": 157.0,
+      "z": 180.0,
+      "rotation_deg": 90,
+      "y": 45,
+      "mount": "on_top_of",
+      "parent": "tray-1",
+      "elevation": 45,
+      "satisfied": [
+        "on_top_of:tray-1"
+      ],
+      "violated": []
+    },
+    {
+      "item_id": "plant-2",
+      "x": 69.0,
+      "z": 278.0,
+      "rotation_deg": 90,
+      "y": 50,
+      "mount": "on_top_of",
+      "parent": "side-1",
+      "elevation": 50,
+      "surface": "top",
+      "satisfied": [
+        "on_top_of:side-1",
+        "surface:top"
+      ],
+      "violated": []
+    },
+    {
+      "item_id": "poster-1",
+      "x": 200.0,
+      "z": 1.5,
+      "rotation_deg": 0,
+      "y": 115,
+      "mount": "wall",
+      "wall": "w1",
+      "satisfied": [
+        "wall_mounted",
+        "far:guitar-1",
+        "hint"
+      ],
+      "violated": []
+    }
+  ],
+  "unplaced": [],
+  "score": 1.0
+}
