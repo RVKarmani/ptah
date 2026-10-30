@@ -170,7 +170,7 @@ def test_low_ambient_without_fixture_flag_still_reported(sample):
 
 
 def test_unlit_focal_point(sample):
-    res = without(sample, "strip-1", "spot-1")
+    res = without(sample, "strip-1", "spot-1", "tvlight-1")
     i = next(i for i in res["issues_all"] if i["code"] == "UNLIT_FOCAL_POINT" and i["item_id"] == "shelf-1")
     assert i["suggest"] == {"category": "led_strip", "attach": "shelf-1", "side": "back"}
     res = without(sample, "plight-1", "lamp-2")
