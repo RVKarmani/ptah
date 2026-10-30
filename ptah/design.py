@@ -422,33 +422,55 @@ def build_vocab(inp: DesignInputs) -> Vocab:
 
 
 # ---------------------------------------------------------------------------------------------------------------- validation
-def _check_chain(chain: WhyChain, where: str, vocab: Vocab, errors: List[str], need_tag: bool) -> None:
-    if not chain.inputs:
-        errors.append(f"{where}: why_chain.inputs is empty (name at least one entity/theme from the inputs)")
-    if need_tag and not chain.tags:
-        errors.append(f"{where}: why_chain.tags is empty (name at least one Qloo tag from the decor/ambience lists)")
-    if not chain.decision.strip():
-        errors.append(f"{where}: why_chain.decision is empty")
+def _check_chain(chain: WhyChain, where: str, vocab: Vocab, errors: List[str], need_tag: bool, repair: bool = False,
+                 warnings: Optional[List[str]] = None) -> None:
+    """Every input / tag must exist in the vocabulary and tag affinities must equal the brief's. With ``repair`` (last resort when the
+    LLM budget is spent) ungrounded references are DROPPED (never kept) and wrong affinities are replaced by the brief's number."""
+    warnings = warnings if warnings is not None else []
     fixed_inputs: List[str] = []
     for n in chain.inputs:
         hit = vocab.entities.get(_norm(n))
         if hit is None:
-            errors.append(f"{where}: input {n!r} is not an entity/theme/place/brand/pick in the inputs")
+            if repair:
+                warnings.append(f"{where}: dropped ungrounded input {n!r}")
+            else:
+                errors.append(f"{where}: input {n!r} is not an entity/theme/place/brand/pick in the inputs")
         else:
             fixed_inputs.append(hit[0])
     chain.inputs = fixed_inputs
+    fixed_tags: List[TagRef] = []
     for t in chain.tags:
         hit = vocab.tags.get((t.kind, _norm(t.name)))
         if hit is None:
-            errors.append(f"{where}: tag {t.kind}:{t.name!r} does not exist in the brief")
+            if repair:
+                warnings.append(f"{where}: dropped ungrounded tag {t.kind}:{t.name!r}")
+            else:
+                errors.append(f"{where}: tag {t.kind}:{t.name!r} does not exist in the brief")
             continue
         canon, aff = hit
         if t.affinity is not None:
             if aff is None:
-                errors.append(f"{where}: tag {t.kind}:{canon!r} has no affinity in the brief (leave it null)")
+                if repair:
+                    warnings.append(f"{where}: tag {canon!r} has no affinity in the brief; set to null")
+                else:
+                    errors.append(f"{where}: tag {t.kind}:{canon!r} has no affinity in the brief (leave it null)")
             elif abs(float(t.affinity) - float(aff)) > 0.006:
-                errors.append(f"{where}: tag {t.kind}:{canon!r} affinity is {aff}, not {t.affinity}")
-        t.name, t.affinity = canon, aff
+                if repair:
+                    warnings.append(f"{where}: tag {canon!r} affinity {t.affinity} replaced by the brief's {aff}")
+                else:
+                    errors.append(f"{where}: tag {t.kind}:{canon!r} affinity is {aff}, not {t.affinity}")
+        fixed_tags.append(TagRef(kind=t.kind, name=canon, affinity=aff))
+    chain.tags = fixed_tags
+    if repair:
+        if not chain.inputs and not chain.tags:
+            errors.append(f"{where}: nothing grounded is left in the why_chain")
+    else:
+        if not chain.inputs:
+            errors.append(f"{where}: why_chain.inputs is empty (name at least one entity/theme from the inputs)")
+        if need_tag and not chain.tags:
+            errors.append(f"{where}: why_chain.tags is empty (name at least one Qloo tag from the decor/ambience lists)")
+    if not chain.decision.strip():
+        errors.append(f"{where}: why_chain.decision is empty")
 
 
 def _fit_range(lo: float, hi: float, blo: int, bhi: int, what: str, warnings: List[str]) -> Tuple[float, float]:
@@ -491,11 +513,24 @@ def default_range(role: Role) -> DimsRange:
     return DimsRange(w=f(w), d=f(d), h=f(h))
 
 
-def validate_spec(raw: Dict[str, Any], vocab: Vocab, art_sources: Optional[set] = None) -> DesignSpec:
+def validate_spec(raw: Dict[str, Any], vocab: Vocab, repair: bool = False) -> DesignSpec:
     """Structure + grounding check. Raises DesignError with every problem; returns the normalised spec (ids assigned,
-    affinities taken from the brief, sizes clamped to plausible bounds)."""
+    affinities taken from the brief, sizes clamped to plausible bounds). ``repair=True`` (last resort) drops ungrounded references and
+    pieces that do not parse instead of rejecting the whole answer; nothing invented is ever kept."""
+    pre_warnings: List[str] = []
+    if repair and isinstance(raw.get("pieces"), list):
+        raw = dict(raw)
+        good = []
+        for i, pr in enumerate(raw["pieces"]):
+            try:
+                PieceSlot.model_validate(pr)
+                good.append(pr)
+            except ValidationError as e:
+                pre_warnings.append(f"pieces[{i}] dropped: {e.errors()[0]['loc']} {e.errors()[0]['msg'][:60]}")
+        raw["pieces"] = good
     try:
         spec = DesignSpec.model_validate(raw)
+        spec.warnings.extend(pre_warnings)
     except ValidationError as e:
         errs = []
         for x in e.errors()[:25]:
@@ -504,22 +539,34 @@ def validate_spec(raw: Dict[str, Any], vocab: Vocab, art_sources: Optional[set] 
         raise DesignError(errs)
     errors: List[str] = []
     for nm, ch in (("palette_why", spec.palette_why), ("materials_why", spec.materials_why), ("lighting_why", spec.lighting_why)):
-        _check_chain(ch, nm, vocab, errors, need_tag=True)
+        _check_chain(ch, nm, vocab, errors, need_tag=True, repair=repair, warnings=spec.warnings)
 
     counts: Dict[str, int] = {}
+    kept: List[PieceSlot] = []
     for i, pc in enumerate(spec.pieces):
         where = f"pieces[{i}] ({pc.role}: {pc.name})"
         role = ROLES.get(pc.role)
         if role is None:
-            errors.append(f"{where}: unknown role {pc.role!r}; allowed: {', '.join(ROLES)}")
+            if repair:
+                spec.warnings.append(f"{where}: unknown role dropped")
+            else:
+                errors.append(f"{where}: unknown role {pc.role!r}; allowed: {', '.join(ROLES)}")
+            continue
+        if repair and counts.get(pc.role, 0) >= role.max_count:
+            spec.warnings.append(f"{where}: more than {role.max_count} of this role, dropped")
             continue
         counts[pc.role] = counts.get(pc.role, 0) + 1
-        _check_chain(pc.why_chain, where, vocab, errors, need_tag=role.major)
+        kept.append(pc)
+        _check_chain(pc.why_chain, where, vocab, errors, need_tag=role.major, repair=repair, warnings=spec.warnings)
         if pc.role.startswith("art_"):
             if not pc.inspired_by:
                 errors.append(f"{where}: inspired_by is required for art pieces (a film / book / artist / place from the inputs)")
             elif _norm(pc.inspired_by) not in vocab.entities:
-                errors.append(f"{where}: inspired_by {pc.inspired_by!r} is not in the inputs")
+                if repair and pc.why_chain.inputs:
+                    spec.warnings.append(f"{where}: inspired_by {pc.inspired_by!r} not in the inputs; using {pc.why_chain.inputs[0]!r}")
+                    pc.inspired_by = pc.why_chain.inputs[0]
+                else:
+                    errors.append(f"{where}: inspired_by {pc.inspired_by!r} is not in the inputs")
             else:
                 pc.inspired_by = vocab.entities[_norm(pc.inspired_by)][0]
         elif pc.inspired_by:
@@ -534,6 +581,7 @@ def validate_spec(raw: Dict[str, Any], vocab: Vocab, art_sources: Optional[set] 
             h=_fit_range(*pc.dims_cm.h, bl[4], bl[5], where + " h", spec.warnings),
         )
         pc.template, pc.category, pc.mount, pc.zone = role.template, role.category, role.mount, role.zone
+    spec.pieces = kept if repair else spec.pieces
     for r in ROLES.values():
         n = counts.get(r.name, 0)
         if r.required and n == 0:
@@ -635,7 +683,7 @@ def build_messages(inp: DesignInputs) -> List[Dict[str, str]]:
 ROOM (fixed; do not change):
 {json.dumps(room_context(inp), ensure_ascii=False)}
 
-PIECE ROLES you may use (one JSON entry per piece; pick 14-22 pieces; all REQUIRED roles must appear):
+PIECE ROLES you may use (one JSON entry per piece; pick 14-20 pieces; all REQUIRED roles must appear):
 {role_table()}
 
 Allowed values: floor = {' | '.join(FLOORS)}. materials = {' | '.join(MATERIALS)}.
@@ -651,8 +699,9 @@ TASK: design this living room so that the 3D render visibly reads as THIS person
 - Each piece has its own why_chain: inputs (1-3 names copied from the data) -> tags (decor/ambience copied from qloo_decor_tags / qloo_ambience_tags with the SAME affinity numbers, or place_tag copied from a place's decor_tags/ambience_tags, or discovery_tag from a pick's tags; affinity null for place_tag/discovery_tag) -> decision (one sentence). Major pieces need at least one tag. Never invent a name, tag or number.
 - dims_cm are shopping ranges [min, max] inside the role's size bounds (the room is 420 x 360 cm: keep the sofa and table proportionate).
 - "name" is a short product-like name without brand names, e.g. "Walnut sideboard".
+- Keep every "decision" under 20 words. Output the JSON object only, with no commentary and no thinking text.
 
-OUTPUT FORMAT (shape only; fill with your design; emit all 14-22 pieces):
+OUTPUT FORMAT (shape only; fill with your design; emit all 14-20 pieces):
 {EXAMPLE}"""
     return [{"role": "system", "content": system}, {"role": "user", "content": user}]
 
@@ -687,8 +736,10 @@ def extract_json(text: str) -> Dict[str, Any]:
         raise DesignError([f"the reply is not valid JSON: {e}"])
 
 
-def call_llm(messages: List[Dict[str, str]], purpose: str, timeout: float = 120.0, max_calls: int = MAX_LLM_CALLS) -> str:
-    """ONE OpenRouter chat completion with PTAH_SUB_LM (no SDK retries: every attempt counts against the daily quota).
+def call_llm(messages: List[Dict[str, str]], purpose: str, timeout: float = 120.0, max_calls: int = MAX_LLM_CALLS,
+             deadline_s: float = 150.0) -> str:
+    """ONE OpenRouter chat completion with PTAH_SUB_LM (no SDK retries: every attempt counts against the daily quota; streamed so
+    the partial answer is saved to data/design_cache/last_llm_raw.txt even if the process is interrupted).
     Refuses to run when the persisted call ledger already holds ``max_calls`` attempts."""
     from .env import load_dotenv
 
@@ -704,8 +755,41 @@ def call_llm(messages: List[Dict[str, str]], purpose: str, timeout: float = 120.
 
     client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=key, timeout=timeout, max_retries=0)
     _ledger_add(purpose, model)
-    r = client.chat.completions.create(model=model, messages=messages, temperature=0.6, max_tokens=9000)
-    return (r.choices[0].message.content or "")
+    raw_file = ROOT / "data" / "design_cache" / "last_llm_raw.txt"
+    raw_file.parent.mkdir(parents=True, exist_ok=True)
+    t0 = time.time()
+    parts: List[str] = []
+    reasoning: List[str] = []
+    finish = None
+    stream = client.chat.completions.create(
+        model=model, messages=messages, temperature=0.6, max_tokens=7000, stream=True,
+        response_format={"type": "json_object"}, extra_body={"reasoning": {"effort": "low"}})
+    try:
+        for ev in stream:
+            if not ev.choices:
+                continue
+            ch0 = ev.choices[0]
+            finish = getattr(ch0, "finish_reason", None) or finish
+            delta = ch0.delta
+            if delta is not None:
+                if getattr(delta, "content", None):
+                    parts.append(delta.content)
+                    if len(parts) % 20 == 0:
+                        raw_file.write_text("".join(parts))
+                rs = getattr(delta, "reasoning", None) or getattr(delta, "reasoning_content", None)
+                if rs:
+                    reasoning.append(rs)
+            if time.time() - t0 > deadline_s:
+                raise TimeoutError(f"LLM answer not finished after {deadline_s:.0f}s ({len(''.join(parts))} chars so far)")
+    finally:
+        raw_file.write_text("".join(parts))
+        raw_file.with_name("last_llm_meta.json").write_text(json.dumps(
+            {"seconds": round(time.time() - t0, 1), "finish_reason": finish, "content_chars": len("".join(parts)),
+             "reasoning_chars": len("".join(reasoning)), "model": model}, indent=1))
+    text = "".join(parts)
+    if not text.strip() and reasoning:  # some reasoning models put the answer in the reasoning channel
+        text = "".join(reasoning)
+    return text
 
 
 def input_hash(inp: DesignInputs) -> str:
@@ -760,6 +844,17 @@ def generate_spec(inp: DesignInputs, cache_dir: Path, force: bool = False, log=p
             last_err = e
             meta["attempts"].append({"attempt": attempt, "seconds": round(time.time() - t0, 1), "rejected": e.errors[:20]})
             log(f"design: answer {attempt} rejected: {e}")
+            if ledger_count() >= MAX_LLM_CALLS or attempt == 2:
+                try:  # last resort: no LLM budget left to ask again, so drop what is ungrounded (never keep it)
+                    spec = validate_spec(extract_json(last_raw), vocab, repair=True)
+                    spec.warnings.append("REPAIRED: ungrounded references dropped because the LLM budget was spent; original errors: " + "; ".join(e.errors[:6]))
+                    meta["attempts"][-1]["repaired"] = True
+                    cf.write_text(json.dumps({"raw": extract_json(last_raw), "attempts": meta["attempts"], "repaired": True}, ensure_ascii=False, indent=1))
+                    return spec, meta
+                except DesignError as e2:
+                    last_err = e2
+                    log(f"design: repair failed: {e2}")
+                    break
             continue
         meta["attempts"].append({"attempt": attempt, "seconds": round(time.time() - t0, 1), "ok": True})
         cf.write_text(json.dumps({"raw": raw, "attempts": meta["attempts"]}, ensure_ascii=False, indent=1))
