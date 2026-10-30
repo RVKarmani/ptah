@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Item, Placement, Scene } from './types'
 import { toInches } from './geometry'
 import { categoryColor } from './palette'
 import { LightRow, LightingPanel, type LightingPanelProps } from './LightingUI'
 import { RoomPanel, type RoomPanelProps } from './RoomPanel'
+import ItemHero from './Thumb3D'
+import { Icon } from './ui'
+import { placementLabel } from './placement'
 
 export type Tab = 'items' | 'lighting' | 'room'
 
@@ -14,7 +17,7 @@ function Thumb({ item, src }: { item: Item; src: string | null }) {
   if (src && !bad) {
     return <img className="thumb" src={src} alt="" referrerPolicy="no-referrer" onError={() => setBad(true)} />
   }
-  return <span className="thumb swatch" style={{ background: categoryColor(item.category, item.id) }} />
+  return <span className="thumb swatch" style={{ background: categoryColor(item.category, item.id) }} aria-hidden />
 }
 
 function parsePrice(p?: string | null): { sym: string; val: number } | null {
@@ -62,17 +65,19 @@ function ItemRow({ r, hoverId, onSelect, onHover, sub = false }: { r: PlacedRow;
   const { item, imageUrl } = r
   return (
     <button
-      className={(hoverId === item.id ? 'row hot' : 'row') + (sub ? ' sub' : '')}
+      className={'row' + (hoverId === item.id ? ' hot' : '') + (sub ? ' sub' : '')}
       onClick={() => onSelect(item.id)}
       onMouseEnter={() => onHover(item.id)}
       onMouseLeave={() => onHover(null)}
+      onFocus={() => onHover(item.id)}
+      onBlur={() => onHover(null)}
     >
       <Thumb item={item} src={imageUrl} />
       <span className="grow">
-        <b>{item.name}</b>
-        <small>{nice(item.category)}{item.dims_estimated && <span className="chip est tiny">est.</span>}</small>
+        <span className="name">{item.name}</span>
+        <span className="sub-text">{nice(item.category)}{item.dims_estimated && !sub && <span className="badge est" title="Size estimated, not read from a product page">est. size</span>}</span>
       </span>
-      {item.owned ? <span className="badge yours sm">Yours</span> : item.price && <span className="price sm">{item.price}</span>}
+      {item.owned ? <span className="badge yours">Yours</span> : item.price && <span className="price">{item.price}</span>}
     </button>
   )
 }
@@ -84,7 +89,7 @@ function DecorGroup({ kids, hoverId, selectedId, onSelect, onHover }: { kids: Pl
   return (
     <div className="decor-group">
       <button className="decor-toggle" aria-expanded={show} onClick={() => setOpen(!show)}>
-        <span className="caret">{show ? '▾' : '▸'}</span> {kids.length} styling piece{kids.length === 1 ? '' : 's'}
+        <Icon name={show ? 'chevron-down' : 'chevron-right'} size={14} /> {kids.length} styling piece{kids.length === 1 ? '' : 's'}
       </button>
       {show && (
         <ul className="list sublist">
@@ -95,23 +100,62 @@ function DecorGroup({ kids, hoverId, selectedId, onSelect, onHover }: { kids: Pl
   )
 }
 
-function Constraint({ c, ok, names }: { c: unknown; ok: boolean; names: Map<string, string> }) {
-  let text: string
-  if (typeof c === 'string') text = c
-  else if (c && typeof c === 'object') {
-    const o = c as { type?: string; target?: string }
-    text = `${o.type ?? ''}${o.target ? ':' + o.target : ''}`
-  } else text = String(c)
-  const [type, target] = text.split(/[:\s]/, 2)
-  const board = type === 'surface' && target?.match(/^shelf#(\d+)$/)
-  const label = board ? `Shelf board ${Number(board[1]) + 1}` : nice(type) + (target ? ` ${names.get(target) ?? target}` : '')
-  return <li className={ok ? 'ok' : 'bad'}>{label}</li>
+/** "Why this fits you": a short chain (A + B -> C -> this piece) from `why_chain`; muted sample placeholder when there is no data. */
+function WhyBlock({ item }: { item: Item }) {
+  const chain = item.why_chain
+  const hasChain = !!chain && ((chain.signals?.length ?? 0) > 0 || !!chain.reading)
+  const text = (item.why ?? '').trim()
+  const realText = text && !/^sample item\.?$/i.test(text) ? text : ''
+  if (hasChain) {
+    return (
+      <section className="section why" aria-label="Why this fits you">
+        <h3>Why this fits you</h3>
+        <div className="chain">
+          {(chain!.signals?.length ?? 0) > 0 && (
+            <div className="chain-step chain-signals">
+              {chain!.signals!.map((s, i) => (
+                <span key={i} style={{ display: 'contents' }}>
+                  {i > 0 && <span className="plus" aria-hidden>+</span>}
+                  <span className="signal">{s}</span>
+                </span>
+              ))}
+            </div>
+          )}
+          {chain!.reading && <><div className="chain-link"><Icon name="arrow-down" size={16} /></div><div className="chain-step chain-reading">{chain!.reading}</div></>}
+          <div className="chain-link"><Icon name="arrow-down" size={16} /></div>
+          <div className="chain-step chain-piece"><Icon name="check" size={16} /> {item.name}</div>
+        </div>
+        {realText && <p>{realText}</p>}
+      </section>
+    )
+  }
+  if (realText) {
+    return (
+      <section className="section why" aria-label="Why this fits you">
+        <h3>Why this fits you</h3>
+        <p>{realText}</p>
+      </section>
+    )
+  }
+  return (
+    <section className="section why" aria-label="Why this fits you (sample placeholder)">
+      <div className="why-head"><h3>Why this fits you</h3><span className="badge sample">Sample</span></div>
+      <div className="chain sample" aria-hidden>
+        <div className="chain-step chain-signals"><span className="signal">A taste signal</span><span className="plus">+</span><span className="signal">Another signal</span></div>
+        <div className="chain-link"><Icon name="arrow-down" size={16} /></div>
+        <div className="chain-step chain-reading">What Ptah reads from them</div>
+        <div className="chain-link"><Icon name="arrow-down" size={16} /></div>
+        <div className="chain-step chain-piece"><Icon name="check" size={16} /> This piece</div>
+      </div>
+      <p className="why-note">Placeholder only. Once Ptah analyses your taste, the real reasoning for this piece appears here.</p>
+    </section>
+  )
 }
 
 interface Props {
   scene: Scene
   itemsById: Map<string, Item>
-  placed: { item: Item; placement: Placement; imageUrl: string | null }[]
+  placed: PlacedRow[]
   selectedId: string | null
   hoverId: string | null
   onSelect: (id: string | null) => void
@@ -120,96 +164,123 @@ interface Props {
   setTab: (t: Tab) => void
   lighting: LightingPanelProps
   roomProps: RoomPanelProps
+  sheetOpen: boolean
+  setSheetOpen: (v: boolean) => void
 }
 
-export default function Panel({ scene, itemsById, placed, selectedId, hoverId, onSelect, onHover, tab, setTab, lighting, roomProps }: Props) {
-  const names = new Map([...itemsById].map(([id, it]) => [id, it.name]))
+export default function Panel({ scene, itemsById, placed, selectedId, hoverId, onSelect, onHover, tab, setTab, lighting, roomProps, sheetOpen, setSheetOpen }: Props) {
   const sel = placed.find((p) => p.item.id === selectedId)
+  const scroller = useRef<HTMLDivElement>(null)
+  const backRef = useRef<HTMLButtonElement>(null)
+
+  // new view -> scroll to top; keyboard users who picked a row land on the Back button
+  useEffect(() => {
+    scroller.current?.scrollTo({ top: 0 })
+    if (selectedId && scroller.current?.contains(document.activeElement)) backRef.current?.focus()
+  }, [selectedId, tab])
+
+  const tabs: [Tab, string][] = [['items', 'Items'], ['lighting', 'Lighting'], ['room', 'Room']]
+  const tabBar = (
+    <div className="panel-head">
+      <div className="tabs" role="tablist" aria-label="Panel sections">
+        {tabs.map(([id, label]) => (
+          <button key={id} role="tab" aria-selected={tab === id} className="tab" onClick={() => setTab(id)}>{label}</button>
+        ))}
+      </div>
+    </div>
+  )
+  const grabber = (
+    <button className="grabber" aria-expanded={sheetOpen} aria-label={sheetOpen ? 'Collapse panel' : 'Expand panel'} onClick={() => setSheetOpen(!sheetOpen)} />
+  )
+  const shell = (body: ReactNode) => (
+    <aside className={'panel' + (sheetOpen ? ' open' : '')} aria-label="Room details">
+      {grabber}
+      <div className="panel-scroll" ref={scroller}>{body}</div>
+    </aside>
+  )
 
   if (sel) {
     const { item, placement, imageUrl } = sel
-    const sat = placement.satisfied ?? []
-    const vio = placement.violated ?? []
-    return (
-      <aside className="panel">
-        <button className="back" onClick={() => onSelect(null)}>← All items</button>
-        <div className="hero">
-          <Thumb item={item} src={imageUrl} />
+    const ctx = { items: itemsById, room: scene.room, hasOnTop: [...(placement.satisfied ?? []), ...(placement.violated ?? [])].some((c) => String(c).startsWith('on_top_of')) }
+    const label = (c: unknown) => placementLabel(c, ctx)
+    const uniq = (xs: (string | null)[]) => [...new Set(xs.filter((x): x is string => !!x))]
+    const met = uniq((placement.satisfied ?? []).map(label))
+    const unmet = uniq((placement.violated ?? []).map(label))
+    const mySpecs = lighting.specs.filter((s) => s.id === item.id)
+    return shell(
+      <>
+        <div className="detail-head" style={{ paddingTop: 16 }}>
+          <button className="btn quiet back" ref={backRef} onClick={() => onSelect(null)}><Icon name="back" size={16} /> All items</button>
+          <ItemHero item={item} imageUrl={imageUrl} />
+          <div className="title-row top">
+            <h2>{item.name}</h2>
+            {item.owned ? <span className="badge yours">Yours</span> : item.price && <span className="price">{item.price}</span>}
+          </div>
+          <div className="chips">
+            <span className="chip">{nice(item.category)}</span>
+            {item.owned && <span className="chip" title="You already own this. It is part of the design but not part of the cost.">Not in the total</span>}
+            {item.dims_estimated && <span className="badge est" title="Size estimated, not read from a product page">Estimated size</span>}
+          </div>
         </div>
-        <div className="title-row">
-          <h2>{item.name}</h2>
-          {item.owned ? <span className="badge yours">Yours</span> : item.price && <span className="price">{item.price}</span>}
-        </div>
-        <div className="chips">
-          {item.owned && <span className="chip yours" title="You already own this; it is part of the design but not part of the cost">owned</span>}
-          <span className="chip">{nice(item.category)}</span>
-          {item.dims_estimated && <span className="chip est" title="Dimensions were estimated, not read from the product page">est.</span>}
-        </div>
-        <dl className="dims">
+        <dl className="kv">
           <dt>Size</dt>
           <dd>
             {item.w} × {item.d} × {item.h} cm
             <small>{toInches(item.w)} × {toInches(item.d)} × {toInches(item.h)} in (W × D × H)</small>
           </dd>
         </dl>
-        {lighting.specs.find((s) => s.id === item.id) && (
-          <section>
+        <WhyBlock item={item} />
+        {(met.length > 0 || unmet.length > 0) && (
+          <section className="section">
+            <h3>Placement</h3>
+            <ul className="place-list">
+              {met.map((t) => <li key={'m' + t}><span className="ok"><Icon name="check" size={16} /></span>{t}</li>)}
+              {unmet.map((t) => <li key={'u' + t} className="bad"><Icon name="cross" size={16} />Not met: {t}</li>)}
+            </ul>
+          </section>
+        )}
+        {mySpecs.length > 0 && (
+          <section className="section">
             <h3>Light</h3>
-            <ul className="list lights">
-              {lighting.specs.filter((s) => s.id === item.id).map((s) => (
-                <LightRow key={s.id} spec={s} st={lighting.states[s.id] ?? { on: true, dim: 1, k: s.kelvin }} onChange={(pp) => lighting.setLight(s.id, pp)} onHover={() => {}} hot={false} />
+            <ul className="list">
+              {mySpecs.map((s) => (
+                <LightRow key={s.id} spec={s} st={lighting.states[s.id] ?? { on: true, dim: 1, k: s.kelvin }} onChange={(pp) => lighting.setLight(s.id, pp)} />
               ))}
             </ul>
           </section>
         )}
-        {item.why && (
-          <section>
-            <h3>Why this fits you</h3>
-            <p>{item.why}</p>
-          </section>
-        )}
-        {(sat.length > 0 || vio.length > 0) && (
-          <section>
-            <h3>Placement</h3>
-            <ul className="cons">
-              {sat.map((c, i) => <Constraint key={'s' + i} c={c} ok names={names} />)}
-              {vio.map((c, i) => <Constraint key={'v' + i} c={c} ok={false} names={names} />)}
-            </ul>
-          </section>
-        )}
         {!item.owned && item.url && (
-          <a className="buy" href={item.url} target="_blank" rel="noreferrer noopener">
-            Buy{item.price ? ` · ${item.price}` : ''} ↗
-          </a>
+          <div className="buy-bar">
+            <a className="btn primary block" href={item.url} target="_blank" rel="noreferrer noopener">
+              Buy{item.price ? ` · ${item.price}` : ''} <Icon name="external" size={16} />
+            </a>
+          </div>
         )}
-      </aside>
+      </>,
     )
   }
+
+  if (tab === 'lighting') return shell(<>{tabBar}<LightingPanel {...lighting} /></>)
+  if (tab === 'room') return shell(<>{tabBar}<RoomPanel {...roomProps} /></>)
 
   const unplaced = scene.layout.unplaced ?? []
   const sum = total(placed.map((p) => p.item))
   const grouped = groupDecor(placed)
   const nOwned = placed.filter((p) => p.item.owned).length
-  const tabs: [Tab, string][] = [['items', 'Items'], ['lighting', 'Lighting'], ['room', 'Room']]
-  const tabBar = (
-    <div className="tabs" role="tablist">
-      {tabs.map(([id, label]) => (
-        <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'tab on' : 'tab'} onClick={() => setTab(id)}>{label}</button>
-      ))}
-    </div>
-  )
-  if (tab === 'lighting') return <aside className="panel">{tabBar}<LightingPanel {...lighting} /></aside>
-  if (tab === 'room') return <aside className="panel">{tabBar}<RoomPanel {...roomProps} /></aside>
-  return (
-    <aside className="panel">
+  const taste = scene.taste
+  return shell(
+    <>
       {tabBar}
-      <div className="title-row">
-        <h2>Your room</h2>
-        {sum && <span className="price" title="Total of placed items">{sum}</span>}
+      {taste?.style_summary && <p className="style-blurb">{taste.style_summary}</p>}
+      <div className="section">
+        <div className="title-row">
+          <h2>Your room</h2>
+          {sum && <span className="price" title="Total of the pieces to buy">{sum}</span>}
+        </div>
+        <p className="intro">
+          {placed.length} pieces{nOwned > 0 ? `, ${nOwned} already yours` : ''}. Click a piece in the room or below for details.
+        </p>
       </div>
-      <p className="muted">
-        {placed.length} piece{placed.length === 1 ? '' : 's'} placed{nOwned > 0 ? ` (${nOwned} yours, not in the total)` : ''}. Click an item in the room, or here, for details.
-      </p>
       <ul className="list">
         {grouped.top.map((r) => (
           <li key={r.item.id}>
@@ -221,8 +292,8 @@ export default function Panel({ scene, itemsById, placed, selectedId, hoverId, o
         ))}
       </ul>
       {unplaced.length > 0 && (
-        <section>
-          <h3>Couldn't place ({unplaced.length})</h3>
+        <section className="section">
+          <h3>Didn't fit ({unplaced.length})</h3>
           <ul className="list">
             {unplaced.map((u) => {
               const it = itemsById.get(u.item_id)
@@ -230,8 +301,8 @@ export default function Panel({ scene, itemsById, placed, selectedId, hoverId, o
                 <li key={u.item_id} className="un">
                   <b>{it?.name ?? u.item_id}</b>
                   <small>
-                    {u.reason ?? 'no room found'}
-                    {u.max_w != null && u.max_d != null && ` — space for up to ${u.max_w} × ${u.max_d} cm`}
+                    {u.reason ?? 'No room found for it'}
+                    {u.max_w != null && u.max_d != null && u.max_w > 0 && ` · space for up to ${u.max_w} × ${u.max_d} cm`}
                   </small>
                 </li>
               )
@@ -239,6 +310,6 @@ export default function Panel({ scene, itemsById, placed, selectedId, hoverId, o
           </ul>
         </section>
       )}
-    </aside>
+    </>,
   )
 }

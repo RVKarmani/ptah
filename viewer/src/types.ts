@@ -78,7 +78,10 @@ export interface Item {
   user_colors?: ColorsDef | null
   /** focal point for the lighting check */
   focal?: boolean
+  /** optional structured explanation: signals (A + B) -> taste reading (C) -> this piece */
+  why_chain?: WhyChain | null
 }
+export interface WhyChain { signals?: string[]; reading?: string }
 export interface Placement {
   item_id: string
   x: number
@@ -117,6 +120,7 @@ export interface LightingZone {
 }
 export interface LightingIssue {
   code?: string
+  item_id?: string
   message: string
   suggest?: { category?: string; near?: string; [k: string]: unknown } | null
 }

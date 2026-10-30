@@ -61,7 +61,6 @@ export default function Daylight({ room, timeH, rig }: { room: Room; timeH: numb
         target={target}
         intensity={sunI}
         color={sun.sunColor}
-        visible={sun.sunFactor > 0.01}
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0003}

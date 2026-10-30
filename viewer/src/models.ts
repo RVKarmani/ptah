@@ -490,8 +490,8 @@ function tvT(B: Builder) {
   sm.receiveShadow = true
   B.group.add(sm)
   // tiny power LED on the chin
-  const led = new THREE.MeshBasicMaterial({ color: '#7a1f1f' })
-  B.glows.push({ mat: led as unknown as THREE.MeshStandardMaterial, strength: 0 })
+  const led = new THREE.MeshStandardMaterial({ color: '#7a1f1f', roughness: 0.6 })
+  B.glows.push({ mat: led, strength: 0 })
   B.mesh(new THREE.SphereGeometry(0.35, 8, 6), led, w * 0.42, standH + bz * 0.8, -hd + t + 0.1, B.group, false)
   if (feet) {
     for (const s of [-1, 1]) {

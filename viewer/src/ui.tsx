@@ -38,7 +38,7 @@ export function Slider({
   )
 }
 
-export type IconName = 'sliders' | 'chevron-down' | 'chevron-up' | 'chevron-right' | 'sun' | 'moon' | 'dusk' | 'home' | 'close' | 'back' | 'external' | 'check' | 'cross' | 'cube' | 'plus'
+export type IconName = 'sliders' | 'chevron-down' | 'chevron-up' | 'chevron-right' | 'sun' | 'moon' | 'dusk' | 'home' | 'close' | 'back' | 'external' | 'check' | 'cross' | 'cube' | 'plus' | 'reset' | 'arrow-down'
 
 const PATHS: Record<IconName, ReactNode> = {
   sliders: <><path d="M4 7h9M17 7h3M4 17h3M11 17h9" /><circle cx="15" cy="7" r="2" /><circle cx="9" cy="17" r="2" /></>,
@@ -56,6 +56,8 @@ const PATHS: Record<IconName, ReactNode> = {
   cross: <path d="M7 7l10 10M17 7 7 17" />,
   cube: <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Zm0 9 8-4.5M12 12v9M12 12 4 7.5" />,
   plus: <path d="M12 5v14M5 12h14" />,
+  reset: <path d="M4 12a8 8 0 1 0 2.6-5.9M4 4v4.5h4.5" />,
+  'arrow-down': <path d="M12 5v14M6 13l6 6 6-6" />,
 }
 
 export function Icon({ name, size = 16 }: { name: IconName; size?: number }) {

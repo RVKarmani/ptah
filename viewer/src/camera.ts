@@ -40,7 +40,7 @@ export function defaultView(scene: Scene, itemsById: Map<string, Item>, aspect: 
   const target = new THREE.Vector3(b.cx, H * 0.14, b.cz)
   const el = 46 * RAD
 
-  type K = { x: number; z: number; f: [number, number]; w: number; key: boolean }
+  type K = { x: number; z: number; f: [number, number]; w: number; key: boolean; seat: boolean }
   const ks: K[] = []
   for (const p of scene.layout.placements) {
     const it = itemsById.get(p.item_id)
@@ -48,7 +48,7 @@ export function defaultView(scene: Scene, itemsById: Map<string, Item>, aspect: 
     const tpl = templateOf(it)
     if (/rug|carpet/.test(tpl) || p.mount === 'on_top_of' || p.mount === 'ceiling' || p.mount === 'attach' || tpl === 'pendant') continue
     if (it.h <= 3) continue
-    ks.push({ x: p.x, z: p.z, f: facing(p.rotation_deg ?? 0), w: Math.sqrt(it.w * it.h) * (it.focal || it.owned ? 1.5 : 1), key: false })
+    ks.push({ x: p.x, z: p.z, f: facing(p.rotation_deg ?? 0), w: Math.sqrt(it.w * it.h) * (it.focal || it.owned ? 1.5 : 1), key: false, seat: /^(sofa|armchair|chair)$/.test(tpl) })
   }
   const maxW = Math.max(1, ...ks.map((k) => k.w))
   const placedKeys = ks.map((k) => ({ ...k, key: k.w >= maxW * 0.55 }))
@@ -62,7 +62,9 @@ export function defaultView(scene: Scene, itemsById: Map<string, Item>, aspect: 
       const dx = cam.x - k.x, dz = cam.z - k.z
       const l = Math.hypot(dx, dz) || 1
       const d = (k.f[0] * dx + k.f[1] * dz) / l
-      if (d > 0.16) score += k.w * Math.pow(d, 0.8)
+      // seating reads fine from behind (we look over the sofa at the screen); everything else wants its front towards us
+      if (k.seat) score += k.w * 0.5 * Math.pow(Math.abs(d), 0.8)
+      else if (d > 0.16) score += k.w * Math.pow(d, 0.8)
       else if (k.key) score -= 1000
     }
     // tiny preference for looking from the "front" (+z, south) so ties are stable between runs
