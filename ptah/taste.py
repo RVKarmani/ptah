@@ -7,10 +7,10 @@ import dspy
 
 from . import qloo
 from .data import load_music, load_posts, load_summary, posts_with_tag, search_posts
-from .qloo import qloo_related, qloo_search
+from .qloo import qloo_related, qloo_search, qloo_taste_tags
 from .schemas import TasteProfile
 
-TOOLS = [search_posts, posts_with_tag, qloo_search, qloo_related]
+TOOLS = [search_posts, posts_with_tag, qloo_search, qloo_related, qloo_taste_tags]
 
 INSTRUCTIONS = """\
 You are a taste analyst. From a person's saved/liked Instagram posts and saved music, build a TasteProfile
@@ -32,6 +32,8 @@ Method:
    Qloo does not return. Keep Qloo calls economical (there is a per-run cap) and batch your thinking first.
 4. Use qloo_related on your strongest verified entities to expand into brands, designers and aesthetics that
    are relevant to interiors and furnishing (domain "brand" / "designer" / "place").
+   Use qloo_taste_tags (kind "decor" / "ambience") on your strongest verified entities to get interior decor and
+   ambience tags with affinities, and ground aesthetic_tags in them.
 5. Evidence for each entity must be short and cite post ids or an artist from music. Confidence is 0-1 and
    should reflect how durable the signal is (many posts = high, a single post = low).
 6. style_summary: 2-3 sentences describing the person's likely interior/visual taste, grounded in the themes.

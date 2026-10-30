@@ -1,7 +1,7 @@
 {
-  "_about": "Candidate home / furniture / decor brands (names only) that the design brief ranks for a person's taste via Qloo filter.results.entities. Edit freely: names are resolved to Qloo ids at runtime with /search (type brand) and cached. Grouped by rough price point; the grouping is informational only.",
-  "budget": ["IKEA", "Target", "Wayfair", "Urban Outfitters", "Muji", "H&M Home", "Zara Home", "Walmart"],
-  "mid": ["West Elm", "Crate & Barrel", "CB2", "Pottery Barn", "Article", "Anthropologie", "HAY", "Ethan Allen", "La-Z-Boy", "Ashley Furniture", "Burrow", "Floyd", "Joybird", "Lulu and Georgia", "Serena & Lily"],
-  "premium": ["Room & Board", "Design Within Reach", "Restoration Hardware", "Williams Sonoma", "Jonathan Adler", "Herman Miller", "Muuto", "Normann Copenhagen", "Ferm Living", "Ligne Roset", "BoConcept", "Roche Bobois"],
-  "luxury": ["Vitra", "Knoll", "Flos", "Louis Poulsen", "Tom Dixon", "Kartell", "Poliform", "Fritz Hansen", "Artemide", "Bang & Olufsen"]
+  "_about": "Candidate home / furniture / decor brands (names only) that the design brief ranks for a person's taste via Qloo filter.results.entities. Edit freely: names are resolved to Qloo ids at runtime with /search (type brand, near-exact name match required) and cached; names Qloo does not know are reported in brief.json as brands_unresolved. Grouped by rough price point; the grouping is informational only.",
+  "budget": ["IKEA", "Target", "Wayfair", "Urban Outfitters", "Muji", "HomeGoods", "Bed Bath & Beyond", "Walmart", "Habitat"],
+  "mid": ["West Elm", "Crate & Barrel", "CB2", "Pottery Barn", "Article Furniture", "Anthropologie", "HAY", "Ethan Allen", "La-Z-Boy", "Ashley Furniture Homestores", "Burrow", "Joybird", "Lovesac", "Havertys", "Lulu and Georgia", "Serena & Lily", "Maisons du Monde"],
+  "premium": ["Design Within Reach", "Williams Sonoma", "Herman Miller", "Muuto", "Ferm Living", "Ligne Roset", "BoConcept A/S", "Roche Bobois", "Heal's", "The Conran Shop"],
+  "luxury": ["Vitra", "Knoll", "Flos", "Louis Poulsen", "Tom Dixon", "Kartell", "Poliform", "Fritz Hansen", "Artemide", "Cassina", "B&B Italia", "Foscarini", "Bang & Olufsen"]
 }

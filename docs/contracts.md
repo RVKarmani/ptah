@@ -243,3 +243,42 @@ Category aliases are in `ptah/products/enrich.py` (`guitar_amp` -> `amp`, `pillo
   so the guitar is hung near the amp (`near:amp-1` in the guitar's `satisfied`).
 - Sample music corner: `amp-1` (floor, `edge`, hint, zone `music_corner`), `guitar-1` (`wall_mounted` at 100 cm, `center_align` + `near` the amp, same zone),
   `hanger-1` (`attach_to` the guitar, `side: back`, `height: 168`), `spot-1` (picture-light spot, `attach_to` the guitar, `side: above`, `light.target: "guitar-1"`).
+
+
+## brief.json (from ptah.brief / run_brief.py, grounded in Qloo)
+
+`python run_brief.py` -> `data/brief.json` (git-ignored: it holds Qloo response data, never commit it). Built from the person's
+Qloo taste entities (`data/taste_profile.json`, else a seed from `data/music.json`) for a location. The point of the file is
+things an LLM alone could not know: what interiors the person's taste maps to, real nearby places and shops that fit it, and
+which home brands that taste is statistically drawn to. Affinities are Qloo's relative 0-1 scores, not probabilities.
+
+Every item below carries `why`: up to 3 of the person's **input entities** (name, not just id) that Qloo's explainability credits
+most, best first: `[{"qloo_id", "name", "score"}]`. Tag `why` comes from running taste analysis on each input alone.
+```json
+{
+  "location": "New York City",
+  "inputs": [{"qloo_id": "...", "name": "...", "type": "artist"}],
+  "skipped_inputs": [{"name": "...", "reason": "no near-exact Qloo artist match"}],
+  "taste": {
+    "decor":    [{"tag_id": "urn:tag:decor:qloo:classic", "name": "Classic", "affinity": 0.95, "popularity": 1.0, "why": []}],
+    "ambience": [{"tag_id": "urn:tag:ambience:qloo:cozy",  "name": "Cozy",    "affinity": 0.80, "popularity": 1.0, "why": []}]
+  },
+  "inspiration_places": [{
+    "qloo_id": "...", "name": "...", "kind": "hotel|restaurant|bar|cafe", "category": "Hotel", "address": "...",
+    "neighborhood": "...", "website": "...", "images": ["https://images.qloo.com/..."],
+    "decor_tags": ["Elegant"], "ambience_tags": ["Sophisticated"], "matched_decor": ["classic"],
+    "affinity": 0.85, "popularity": 0.93, "score": 0.89, "why": []
+  }],
+  "local_shops": [{ "...same place fields...": "", "shop_kind": "furniture store|home goods store|antiques|flea market|art gallery|record store" }],
+  "brands": [{"qloo_id": "...", "name": "...", "catalog_name": "...", "tier": "budget|mid|premium|luxury",
+              "affinity": 0.86, "tags": [], "description": "...", "images": [], "why": []}],
+  "brands_unresolved": ["catalog names Qloo does not know"],
+  "discovery": [{"qloo_id": "...", "name": "...", "type": "movie|artist|book", "affinity": 0.91, "tags": [], "images": [], "description": "...", "why": []}],
+  "qloo": {"network_calls": 57, "filters": {"landmarks_excluded": [], "quick_service_excluded": [], "big_box_excluded": [], "retail_noise_excluded": [],
+                                            "inspiration_categories": {}, "shop_categories": {}}}
+}
+```
+- `score` (places/shops) = `affinity` + 0.02 per top-3 decor tag the place carries (`matched_decor`); lists are sorted by it.
+- `inspiration_places` only include places with a photo (`images`), at most 4 per kind; `local_shops` at most 3 per `shop_kind`.
+- `brands` are sorted by affinity; `tier` is the catalog group (`ptah/catalog/home_brands.json`), informational, so a consumer can pick
+  across price points. `discovery` items are not among `inputs` (`filter.exclude.entities`) and suit poster / print ideas.

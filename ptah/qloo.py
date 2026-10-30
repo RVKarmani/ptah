@@ -195,9 +195,10 @@ def type_urn(t: str) -> str:
 
 
 def name_similarity(a: str, b: str) -> float:
-    """Case/punctuation-insensitive name match quality 0-1."""
+    """Case/punctuation-insensitive name match quality 0-1 (ignores 'and'/'the'; '&' counts as punctuation)."""
     def norm(s: str) -> str:
-        return " ".join("".join(c.lower() if c.isalnum() else " " for c in s).split())
+        words = "".join(c.lower() if c.isalnum() else " " for c in s).split()
+        return " ".join(w for w in words if w not in ("and", "the"))
     na, nb = norm(a), norm(b)
     if not na or not nb:
         return 0.0
@@ -266,7 +267,7 @@ def parse_entity(raw: dict, names: dict[str, str] | None = None) -> dict:
         "category": genre.get("name") if isinstance(genre, dict) else None,
         "decor_tags": tag_names(tags, ("urn:tag:decor:",), 6),
         "ambience_tags": tag_names(tags, ("urn:tag:ambience:",), 6),
-        "tags": tag_names(tags, (), 6),
+        "tags": tag_names(sorted(tags, key=lambda t: "genre" not in (t.get("id") or t.get("tag_id") or "")), (), 6),
         "tag_ids": [t.get("id") or t.get("tag_id") for t in tags if (t.get("id") or t.get("tag_id"))],
         "why": why_chain(q.get("explainability"), names),
     }

@@ -17,15 +17,17 @@ pip install -r requirements.txt
 - `PTAH_LM` (required for real runs): litellm-style model, e.g. `anthropic/<model>`; plus the provider key (e.g. `ANTHROPIC_API_KEY`).
 - `PTAH_SUB_LM` (optional): cheaper model for RLM sub-queries; defaults to `PTAH_LM`.
 - `PTAH_MAX_ITERS` (default 20), `PTAH_MAX_LLM_CALLS` (default 50): RLM limits.
-- `QLOO_API_KEY`: the Qloo tools are stubs; if this is set they raise `NotImplementedError` until the real client exists.
+- `QLOO_API_KEY`: Qloo hackathon key (environment variable, or a `QLOO_API_KEY=...` line in the git-ignored `.env`). Without it the Qloo tools return clearly marked stubs (`"stub": true`) and `run_brief.py` refuses to run.
+- `QLOO_BASE_URL` (default `https://hackathon.api.qloo.com`), `PTAH_QLOO_CACHE_DIR` (default `cache/qloo`).
 
 ## Commands
 ```
 python run_taste.py --dry-run   # no LLM; checks tools, schemas, RLM construction
 python run_taste.py             # real run -> data/taste_profile.json
 python run_taste.py --qloo-cap 30
+python run_brief.py             # Qloo design brief -> data/brief.json (see "Qloo usage" below)
 ```
-Layout: `ptah/schemas.py` (models), `ptah/data.py` (post tools), `ptah/qloo.py` (stub tools, cache, call cap), `ptah/taste.py` (RLM program).
+Layout: `ptah/schemas.py` (models), `ptah/data.py` (post tools), `ptah/qloo.py` (Qloo client, cache, call cap, LLM tools), `ptah/taste.py` (RLM program), `ptah/brief.py` (design brief), `ptah/catalog/home_brands.json` (editable brand candidates).
 
 ## Viewer
 3D web viewer (Vite + React + TypeScript + react-three-fiber) in `viewer/`. Reads `room.json`, `items.json`, `layout.json` (and optional `taste.json`) and shows the furnished room as a dollhouse; click items for details and a Buy link.
@@ -95,3 +97,32 @@ window patches, strength by hour (0 before 06:00 / after 18:00, ~15 klux outdoor
 `GLARE_RISK`, each with a `suggest` ({category, near | attach+side | above}) the agent can turn into a product search plus a mounting constraint.
 
 Tests: `pytest tests` (layout, mounts, enrichment, lighting).
+
+
+## Qloo usage
+
+Qloo (https://hackathon.api.qloo.com, GET only, `X-Api-Key` header) is the cultural-intelligence layer: it supplies what an LLM alone would
+guess at. `ptah/qloo.py` is the client; every call is cached on disk, retried on 429/5xx, and counted against a per-run cap.
+
+| Qloo call | Used for |
+|---|---|
+| `/search` (`types=urn:entity:*`) | `qloo_search` tool and brief seeding: name -> Qloo entity id. Candidates are accepted only on a near-exact name match, so a loose hit never becomes a taste signal. |
+| `/v2/insights`, `filter.type=urn:tag`, `filter.tag.types=urn:tag:decor:qloo` or `urn:tag:ambience:qloo`, `filter.parents.types=urn:entity:place`, `signal.interests.entities` | **Taste analysis** (`qloo_taste_tags`, brief `taste`): which interior decor styles and ambiences the person's entities map to. Run once for the whole taste and once per entity to explain each tag. |
+| `/v2/insights`, `filter.type=urn:entity:place`, `filter.tags=<category>,<decor tag>` + `operator.filter.tags=intersection`, `filter.location.query`, `filter.exclude.tags` (landmarks, counter-service) | Brief `inspiration_places`: hotels, restaurants, bars and cafes with strong interiors in the top decor styles, in the person's city. |
+| same, `filter.tags=<shop category>`, `filter.exclude.tags` (department store, warehouse club, home improvement, mall, wholesaler, gift shop, appliance store) | Brief `local_shops`: furniture, home goods, antiques, flea markets, galleries, record stores. |
+| `/v2/insights`, `filter.type=urn:entity:brand`, `filter.results.entities=<catalog ids>` | Brief `brands`: ranks the editable candidate catalog (`ptah/catalog/home_brands.json`) for this taste. Qloo has no home-brand category tag, so we score a named candidate list instead of filtering. |
+| `/v2/insights`, `filter.type=urn:entity:movie\|artist\|book`, `filter.exclude.entities=<inputs>` | Brief `discovery`: films, artists and books the taste predicts but the person did not list (poster / print ideas). |
+| `feature.explainability=true` on every entity query | Each result's `why`: which input entities contributed most, with scores. `qloo_related` returns it too. |
+| `/v2/tags` | `qloo.tags()` helper for finding valid tag ids (not used at runtime by the brief). |
+
+Noise is removed with documented filters only (tag exclusions, intersections, location), never name blocklists. Invalid Qloo parameters are
+silently ignored by the API, so every parameter above was checked against the Entity Type Parameter Guide.
+
+Brief: `python run_brief.py [--profile data/taste_profile.json] [--entity "Name:type" ...] [--location "New York City"]`. Without a
+profile it seeds from `data/music.json` (each artist resolved via `/search`, near-exact matches only, deduplicated). Output contract:
+`docs/contracts.md` ("brief.json").
+
+Caching and terms: responses are cached privately under `cache/qloo/` (keyed by a hash of path + query params, no TTL; the API key is never
+part of a key, a cache file, a log line or an error). Qloo's terms allow private server-side caching but forbid publishing response data, so
+`cache/`, `data/` (including `brief.json`) and `docs/qloo_probe/` are git-ignored and tests use synthetic fixtures (`tests/qloo_fakes.py`).
+Cache hits are free; `--qloo-cap` (brief, default 400) and `qloo.reset(cap)` (LLM tools, default 60) limit network calls.
