@@ -14,3 +14,4 @@ data/
 # Qloo responses: private cache only (Qloo terms: never in a public repo)
 docs/qloo_probe/
 cache/
+.venv-mac/

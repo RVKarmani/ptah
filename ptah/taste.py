@@ -75,6 +75,7 @@ def build_program(sub_lm: dspy.LM | None = None) -> dspy.RLM:
         ExtractTaste,
         max_iters=int(os.environ.get("PTAH_MAX_ITERS", 20)),
         max_llm_calls=int(os.environ.get("PTAH_MAX_LLM_CALLS", 50)),
+        verbose=os.environ.get("PTAH_VERBOSE", "1") == "1",
         tools=TOOLS,
         sub_lm=sub_lm,
     )
