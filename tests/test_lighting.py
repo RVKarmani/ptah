@@ -96,7 +96,7 @@ def test_sample_all_scenes_pass(sample):
     assert z["status"] == "ok" and z["lux"] >= 0.8 * 300 and z["item_ids"][:2] == ["sofa-1", "lamp-1"]
     ev = res["scenes"]["evening"]
     assert 50 <= ev["ambient_avg_lux"] <= 150
-    assert all(f["accent_lit"] for f in ev["focal_points"]) and {f["item_id"] for f in ev["focal_points"]} == {"shelf-1", "plant-1", "art-1", "guitar-1"}
+    assert all(f["accent_lit"] for f in ev["focal_points"]) and {f["item_id"] for f in ev["focal_points"]} == {"shelf-1", "plant-1", "art-1", "guitar-1", "tv-1", "console-1"}
     assert res["scenes"]["day"]["daylight"]["informational"] and res["scenes"]["day"]["issues"] == []
 
 
@@ -170,9 +170,9 @@ def test_low_ambient_without_fixture_flag_still_reported(sample):
 
 
 def test_unlit_focal_point(sample):
-    res = without(sample, "strip-1")
-    i = next(i for i in res["issues_all"] if i["code"] == "UNLIT_FOCAL_POINT")
-    assert i["item_id"] == "shelf-1" and i["suggest"] == {"category": "led_strip", "attach": "shelf-1", "side": "back"}
+    res = without(sample, "strip-1", "spot-1")
+    i = next(i for i in res["issues_all"] if i["code"] == "UNLIT_FOCAL_POINT" and i["item_id"] == "shelf-1")
+    assert i["suggest"] == {"category": "led_strip", "attach": "shelf-1", "side": "back"}
     res = without(sample, "plight-1", "lamp-2")
     ids = {i["item_id"] for i in res["issues_all"] if i["code"] == "UNLIT_FOCAL_POINT"}
     assert "art-1" in ids

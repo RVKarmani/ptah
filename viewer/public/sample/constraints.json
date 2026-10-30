@@ -1,18 +1,58 @@
 {
- "sofa-1": {
+ "console-1": {
   "anchor": true,
   "hint": {
-   "x": 46,
-   "z": 178,
-   "rotation_deg": 90
+   "x": 290,
+   "z": 20,
+   "rotation_deg": 0
   },
   "constraints": [
    {
     "type": "edge"
+   }
+  ]
+ },
+ "tv-1": {
+  "constraints": [
+   {
+    "type": "wall_mounted",
+    "height": 100
    },
    {
+    "type": "center_align",
+    "target": "console-1"
+   },
+   {
+    "type": "near",
+    "target": "console-1"
+   }
+  ]
+ },
+ "tvlight-1": {
+  "constraints": [
+   {
+    "type": "attach_to",
+    "target": "tv-1",
+    "side": "back"
+   }
+  ]
+ },
+ "sofa-1": {
+  "anchor": true,
+  "zone": "conversation",
+  "hint": {
+   "x": 290,
+   "z": 268,
+   "rotation_deg": 180
+  },
+  "constraints": [
+   {
     "type": "face",
-    "target": "room_center"
+    "target": "console-1"
+   },
+   {
+    "type": "center_align",
+    "target": "console-1"
    }
   ]
  },
@@ -59,13 +99,19 @@
   ]
  },
  "shelf-1": {
+  "zone": "music_corner",
+  "hint": {
+   "x": 404,
+   "z": 250,
+   "rotation_deg": 270
+  },
   "constraints": [
    {
     "type": "edge"
    },
    {
-    "type": "far",
-    "target": "sofa-1"
+    "type": "near",
+    "target": "amp-1"
    }
   ]
  },
@@ -121,18 +167,15 @@
   ]
  },
  "art-1": {
+  "hint": {
+   "x": 0,
+   "z": 180
+  },
   "constraints": [
    {
     "type": "wall_mounted",
-    "height": 120
-   },
-   {
-    "type": "center_align",
-    "target": "sofa-1"
-   },
-   {
-    "type": "near",
-    "target": "sofa-1"
+    "height": 120,
+    "wall": "w4"
    }
   ]
  },
@@ -165,18 +208,15 @@
   "zone": "music_corner",
   "hint": {
    "x": 409,
-   "z": 150,
+   "z": 170,
    "rotation_deg": 270
   },
   "constraints": [
    {
     "type": "edge"
-   },
-   {
-    "type": "near",
-    "target": "guitar-1"
    }
-  ]
+  ],
+  "anchor": true
  },
  "guitar-1": {
   "zone": "music_corner",
@@ -308,7 +348,7 @@
    }
   ],
   "hint": {
-   "x": 200,
+   "x": 165,
    "z": 0
   }
  }

@@ -8,3 +8,6 @@ __pycache__/
 .pytest_cache/
 # personal data: never commit the user's Instagram export or derived files
 data/
+
+# secrets
+.env

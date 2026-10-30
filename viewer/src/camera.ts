@@ -82,7 +82,7 @@ export function defaultView(scene: Scene, itemsById: Map<string, Item>, aspect: 
   }
 }
 
-const DIRECTIONAL = new Set(['sofa', 'armchair', 'chair', 'bookshelf', 'cabinet', 'tv_stand', 'bed', 'desk', 'nightstand', 'amp', 'art', 'poster', 'mirror', 'guitar', 'frame', 'sconce', 'dining_table'])
+const DIRECTIONAL = new Set(['sofa', 'armchair', 'chair', 'bookshelf', 'cabinet', 'tv_stand', 'bed', 'desk', 'nightstand', 'amp', 'art', 'poster', 'mirror', 'guitar', 'frame', 'sconce', 'dining_table', 'tv'])
 
 /** A close-up that frames an item from its front side, nudged towards where the camera already is. */
 export function focusPose(item: Item, pl: Placement, camPos: THREE.Vector3, camTarget: THREE.Vector3, aspect: number, fitDist: number): Pose {

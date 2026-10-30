@@ -46,6 +46,7 @@ export function templateOf(item: Item): string {
     [/pendant|chandelier|ceiling_?(light|lamp)/, 'pendant'],
     [/sconce|wall_?(light|lamp)/, 'sconce'],
     [/picture_?light/, 'picture_light'],
+    [/^(led_|oled_|smart_)?(tv|television)(_set|_screen)?$/, 'tv'],
     [/led|light_?strip|strip_?light/, 'led_strip'],
     [/lamp/, 'table_lamp'],
     [/sofa|couch|sectional|loveseat/, 'sofa'],
@@ -59,6 +60,7 @@ export function templateOf(item: Item): string {
     [/night_?stand|bedside/, 'nightstand'],
     [/\bbed\b|^bed|mattress/, 'bed'],
     [/book|shelf|shelv/, 'bookshelf'],
+    [/^(smart_|flat_?screen_|oled_|led_)?(tv|television)(_set|_screen)?$|^television|^monitor$/, 'tv'],
     [/tv|media/, 'tv_stand'],
     [/cabinet|dresser|sideboard|console|credenza|storage|wardrobe|drawers/, 'cabinet'],
     [/rug|carpet/, 'rug'],
@@ -88,7 +90,7 @@ export function lampMetrics(template: string, w: number, d: number, h: number) {
 const DEFAULTS: Record<string, [string, string]> = {
   sofa: ['linen', 'walnut'], armchair: ['linen', 'walnut'], chair: ['linen', 'oak'],
   coffee_table: ['oak', 'oak'], side_table: ['oak', 'black_metal'], dining_table: ['oak', 'oak'], desk: ['oak', 'black_metal'],
-  bed: ['linen', 'oak'], nightstand: ['oak', 'brass'], bookshelf: ['oak', 'oak'], cabinet: ['oak', 'brass'], tv_stand: ['oak', 'black_metal'],
+  bed: ['linen', 'oak'], nightstand: ['oak', 'brass'], bookshelf: ['oak', 'oak'], cabinet: ['oak', 'brass'], tv_stand: ['oak', 'black_metal'], tv: ['black_metal', 'black_metal'],
   rug: ['wool', 'wool'], floor_lamp: ['black_metal', 'linen'], table_lamp: ['ceramic', 'linen'], pendant: ['linen', 'brass'],
   sconce: ['brass', 'linen'], led_strip: ['black_metal', 'plastic'], picture_light: ['brass', 'brass'], plant: ['ceramic', 'ceramic'],
   art: ['painted', 'oak'], mirror: ['glass', 'brass'], generic: ['painted', 'oak'],
@@ -465,6 +467,39 @@ function cabinet(B: Builder, tvStand: boolean) {
   }
 }
 
+
+/** Flat-screen TV: slim black bezel, dark glossy screen, optional low stand (`params.stand`: "feet" | "none"). Front faces +z. */
+function tvT(B: Builder) {
+  const { w, h, d, hd } = B
+  const feet = B.p<string>('stand', 'none') === 'feet'
+  const standH = feet ? clamp(h * 0.1, 4, 8) : 0
+  const bodyH = h - standH
+  const t = clamp(d * 0.42, 2.2, 4.5) // panel thickness; the rest of d is the rear bulge
+  const bezelM = getMaterial('black_metal', '#14151a', 'black_metal')
+  // panel with a thin bezel
+  B.box(bezelM, w, bodyH, t, 0, standH, -hd + t / 2, 0.5)
+  // rear electronics bulge (visible from the side and when wall-mounted close up)
+  if (d > t + 0.5) B.box(bezelM, w * 0.45, bodyH * 0.55, d - t, 0, standH + bodyH * 0.22, -hd + t + (d - t) / 2, 0.8)
+  // glossy screen, inset a few mm proud of the bezel
+  const bz = clamp(w * 0.012, 0.7, 1.6)
+  const screenM = new THREE.MeshStandardMaterial({ color: '#07080b', roughness: 0.1, metalness: 0.15 })
+  B.glows.push({ mat: screenM, strength: 0 }) // registered so the material is disposed with the model
+  const sg = new THREE.PlaneGeometry(w - bz * 2, bodyH - bz * 2 - bodyH * 0.012)
+  const sm = new THREE.Mesh(sg, screenM)
+  sm.position.set(0, standH + bodyH / 2 + bodyH * 0.006, -hd + t + 0.06)
+  sm.receiveShadow = true
+  B.group.add(sm)
+  // tiny power LED on the chin
+  const led = new THREE.MeshBasicMaterial({ color: '#7a1f1f' })
+  B.glows.push({ mat: led as unknown as THREE.MeshStandardMaterial, strength: 0 })
+  B.mesh(new THREE.SphereGeometry(0.35, 8, 6), led, w * 0.42, standH + bz * 0.8, -hd + t + 0.1, B.group, false)
+  if (feet) {
+    for (const s of [-1, 1]) {
+      B.box(bezelM, w * 0.07, standH, Math.min(d, 18), s * w * 0.36, 0, -hd + Math.min(d, 18) / 2, 0.6)
+    }
+  }
+}
+
 function roundedRectShape(w: number, d: number, r: number, inset = 0): THREE.Shape {
   const hw = w / 2 - inset, hd = d / 2 - inset
   const rr = Math.max(0.01, Math.min(r, hw, hd))
@@ -772,6 +807,7 @@ export function buildModel(item: Item, opts: BuildOpts = {}): Built {
     case 'bookshelf': bookshelf(B, opts.shelfBlocks); break
     case 'cabinet': cabinet(B, false); break
     case 'tv_stand': cabinet(B, true); break
+    case 'tv': tvT(B); break
     case 'rug': rug(B); break
     case 'floor_lamp': lamp(B, true); break
     case 'table_lamp': lamp(B, false); break

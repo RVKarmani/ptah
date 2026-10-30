@@ -3,22 +3,64 @@
   "placements": [
     {
       "item_id": "sofa-1",
-      "x": 46.0,
-      "z": 180.0,
-      "rotation_deg": 90,
+      "x": 290.0,
+      "z": 268.0,
+      "rotation_deg": 180,
       "satisfied": [
-        "edge",
-        "face",
+        "face:console-1",
+        "center_align:console-1",
+        "zone:conversation",
         "hint"
       ],
       "violated": [],
       "y": 0
     },
     {
+      "item_id": "console-1",
+      "x": 290.0,
+      "z": 20.0,
+      "rotation_deg": 0,
+      "satisfied": [
+        "edge",
+        "hint"
+      ],
+      "violated": [],
+      "y": 0
+    },
+    {
+      "item_id": "tv-1",
+      "x": 291.5,
+      "z": 3.5,
+      "rotation_deg": 0,
+      "y": 100,
+      "mount": "wall",
+      "wall": "w1",
+      "satisfied": [
+        "wall_mounted",
+        "center_align:console-1",
+        "near:console-1"
+      ],
+      "violated": []
+    },
+    {
+      "item_id": "tvlight-1",
+      "x": 291.5,
+      "z": 1.0,
+      "rotation_deg": 0,
+      "y": 169,
+      "mount": "attach",
+      "parent": "tv-1",
+      "side": "back",
+      "satisfied": [
+        "attach_to:tv-1"
+      ],
+      "violated": []
+    },
+    {
       "item_id": "table-1",
-      "x": 157.0,
-      "z": 180.0,
-      "rotation_deg": 90,
+      "x": 290.0,
+      "z": 157.0,
+      "rotation_deg": 180,
       "satisfied": [
         "middle",
         "in_front_of:sofa-1",
@@ -32,8 +74,8 @@
     },
     {
       "item_id": "rug-1",
-      "x": 157.0,
-      "z": 180.0,
+      "x": 290.0,
+      "z": 157.0,
       "rotation_deg": 180,
       "satisfied": [
         "under:table-1",
@@ -44,9 +86,9 @@
     },
     {
       "item_id": "lamp-1",
-      "x": 20.0,
-      "z": 288.0,
-      "rotation_deg": 90,
+      "x": 398.0,
+      "z": 294.0,
+      "rotation_deg": 180,
       "satisfied": [
         "side_of:sofa-1",
         "near:sofa-1",
@@ -59,13 +101,15 @@
     },
     {
       "item_id": "shelf-1",
-      "x": 325.0,
-      "z": 16.0,
-      "rotation_deg": 0,
+      "x": 404.0,
+      "z": 230.0,
+      "rotation_deg": 270,
       "satisfied": [
         "edge",
-        "far:sofa-1",
-        "ergo:window_light"
+        "near:amp-1",
+        "ergo:window_light",
+        "zone:music_corner",
+        "hint"
       ],
       "violated": [],
       "y": 0
@@ -85,9 +129,9 @@
     },
     {
       "item_id": "side-1",
-      "x": 69.5,
-      "z": 290.5,
-      "rotation_deg": 90,
+      "x": 179.5,
+      "z": 268.0,
+      "rotation_deg": 180,
       "satisfied": [
         "side_of:sofa-1",
         "near:sofa-1",
@@ -98,9 +142,9 @@
     },
     {
       "item_id": "lamp-2",
-      "x": 69.0,
-      "z": 298.0,
-      "rotation_deg": 90,
+      "x": 187.0,
+      "z": 268.5,
+      "rotation_deg": 180,
       "y": 50,
       "mount": "on_top_of",
       "parent": "side-1",
@@ -114,9 +158,9 @@
     },
     {
       "item_id": "pendant-1",
-      "x": 157.0,
-      "z": 180.0,
-      "rotation_deg": 90,
+      "x": 290.0,
+      "z": 157.0,
+      "rotation_deg": 180,
       "y": 180,
       "mount": "ceiling",
       "satisfied": [
@@ -128,9 +172,9 @@
     },
     {
       "item_id": "strip-1",
-      "x": 325.0,
-      "z": 1.0,
-      "rotation_deg": 0,
+      "x": 419.0,
+      "z": 230.0,
+      "rotation_deg": 270,
       "y": 178,
       "mount": "attach",
       "parent": "shelf-1",
@@ -150,8 +194,7 @@
       "wall": "w4",
       "satisfied": [
         "wall_mounted",
-        "center_align:sofa-1",
-        "near:sofa-1"
+        "hint"
       ],
       "violated": []
     },
@@ -187,7 +230,7 @@
     {
       "item_id": "guitar-1",
       "x": 417.0,
-      "z": 151.5,
+      "z": 171.5,
       "rotation_deg": 270,
       "y": 100,
       "mount": "wall",
@@ -203,10 +246,11 @@
     {
       "item_id": "amp-1",
       "x": 409.0,
-      "z": 149.0,
+      "z": 169.0,
       "rotation_deg": 270,
       "satisfied": [
         "edge",
+        "zone:music_corner",
         "hint"
       ],
       "violated": [],
@@ -215,7 +259,7 @@
     {
       "item_id": "hanger-1",
       "x": 417.0,
-      "z": 151.5,
+      "z": 171.5,
       "rotation_deg": 270,
       "y": 168,
       "mount": "attach",
@@ -229,7 +273,7 @@
     {
       "item_id": "spot-1",
       "x": 414.0,
-      "z": 151.5,
+      "z": 171.5,
       "rotation_deg": 270,
       "y": 201,
       "mount": "attach",
@@ -242,9 +286,9 @@
     },
     {
       "item_id": "cushion-1",
-      "x": 42.3,
-      "z": 227.2,
-      "rotation_deg": 90,
+      "x": 337.2,
+      "z": 271.7,
+      "rotation_deg": 180,
       "y": 41,
       "mount": "on_top_of",
       "parent": "sofa-1",
@@ -258,9 +302,9 @@
     },
     {
       "item_id": "cushion-2",
-      "x": 42.3,
-      "z": 180.2,
-      "rotation_deg": 90,
+      "x": 290.2,
+      "z": 271.7,
+      "rotation_deg": 180,
       "y": 41,
       "mount": "on_top_of",
       "parent": "sofa-1",
@@ -274,9 +318,9 @@
     },
     {
       "item_id": "throw-1",
-      "x": 63.3,
-      "z": 132.2,
-      "rotation_deg": 90,
+      "x": 242.2,
+      "z": 250.7,
+      "rotation_deg": 180,
       "y": 41,
       "mount": "on_top_of",
       "parent": "sofa-1",
@@ -290,9 +334,9 @@
     },
     {
       "item_id": "book-stack-1",
-      "x": 307.4,
-      "z": 16.4,
-      "rotation_deg": 0,
+      "x": 403.6,
+      "z": 212.4,
+      "rotation_deg": 270,
       "y": 75.6,
       "mount": "on_top_of",
       "parent": "shelf-1",
@@ -307,9 +351,9 @@
     },
     {
       "item_id": "vase-1",
-      "x": 342.4,
-      "z": 16.4,
-      "rotation_deg": 0,
+      "x": 403.6,
+      "z": 247.4,
+      "rotation_deg": 270,
       "y": 75.6,
       "mount": "on_top_of",
       "parent": "shelf-1",
@@ -324,9 +368,9 @@
     },
     {
       "item_id": "vinyl-crate-1",
-      "x": 325.4,
-      "z": 16.4,
-      "rotation_deg": 0,
+      "x": 403.6,
+      "z": 230.4,
+      "rotation_deg": 270,
       "y": 6,
       "mount": "on_top_of",
       "parent": "shelf-1",
@@ -341,9 +385,9 @@
     },
     {
       "item_id": "tray-1",
-      "x": 157.0,
-      "z": 180.0,
-      "rotation_deg": 90,
+      "x": 290.0,
+      "z": 157.0,
+      "rotation_deg": 180,
       "y": 42,
       "mount": "on_top_of",
       "parent": "table-1",
@@ -357,9 +401,9 @@
     },
     {
       "item_id": "candle-1",
-      "x": 157.0,
-      "z": 180.0,
-      "rotation_deg": 90,
+      "x": 290.0,
+      "z": 157.0,
+      "rotation_deg": 180,
       "y": 45,
       "mount": "on_top_of",
       "parent": "tray-1",
@@ -371,9 +415,9 @@
     },
     {
       "item_id": "plant-2",
-      "x": 69.0,
-      "z": 278.0,
-      "rotation_deg": 90,
+      "x": 167.0,
+      "z": 268.5,
+      "rotation_deg": 180,
       "y": 50,
       "mount": "on_top_of",
       "parent": "side-1",
@@ -387,7 +431,7 @@
     },
     {
       "item_id": "poster-1",
-      "x": 200.0,
+      "x": 165.0,
       "z": 1.5,
       "rotation_deg": 0,
       "y": 115,
@@ -402,5 +446,5 @@
     }
   ],
   "unplaced": [],
-  "score": 1.0
+  "score": 0.997
 }

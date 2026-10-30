@@ -46,8 +46,10 @@ def test_sample_room_solves(sample):
     assert hard_violations(room, items, lay) == []
     assert 0.0 <= lay["score"] <= 1.0 and lay["score"] > 0.8
     p = by_item(lay)
-    # sofa on an edge facing into the room; table in front of it
-    assert "edge" in p["sofa-1"]["satisfied"]
+    # living room: the console sits on a wall, the sofa faces it, the table is in front of the sofa
+    assert "edge" in p["console-1"]["satisfied"]
+    assert "face:console-1" in p["sofa-1"]["satisfied"]
+    assert p["tv-1"]["mount"] == "wall" and p["tv-1"]["y"] > p["console-1"]["y"]
     assert "in_front_of:sofa-1" in p["table-1"]["satisfied"]
     assert "under:table-1" in p["rug-1"]["satisfied"]
 
@@ -158,11 +160,11 @@ def test_hint_pulls_item_and_is_optional(sample):
     cons["lamp-1"]["constraints"] = []
     cons["lamp-1"].pop("zone", None)
     no_hint = by_item(plan_layout(room, items, cons))["lamp-1"]
-    cons["lamp-1"]["hint"] = {"x": 380, "z": 250, "rotation_deg": 90}
+    cons["lamp-1"]["hint"] = {"x": 395, "z": 330, "rotation_deg": 180}
     lay = plan_layout(room, items, cons)
     hinted = by_item(lay)["lamp-1"]
-    assert ((hinted["x"] - 380) ** 2 + (hinted["z"] - 250) ** 2) ** 0.5 <= 25
-    assert hinted["rotation_deg"] == 90 and "hint" in hinted["satisfied"]
+    assert ((hinted["x"] - 395) ** 2 + (hinted["z"] - 330) ** 2) ** 0.5 <= 25
+    assert hinted["rotation_deg"] == 180 and "hint" in hinted["satisfied"]
     assert (no_hint["x"], no_hint["z"]) != (hinted["x"], hinted["z"])
     assert "hint" not in base["satisfied"] + base["violated"]
     assert hard_violations(room, items, lay) == []
