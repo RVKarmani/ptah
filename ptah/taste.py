@@ -27,8 +27,8 @@ Method:
    recur across many posts and owners (hobbies, places, media, design, fashion, food, music).
 2. Use code over `posts` (counting, grouping hashtags/owners, keyword search) and the search_posts /
    posts_with_tag tools to size each theme and collect example post ids.
-3. Draft candidate entities (artists, films, shows, brands, places, designers). VERIFY every candidate with
-   qloo_search before including it; use the qloo_id and canonical name it returns. Drop candidates that
+3. Draft candidate entities (artists, films, shows, brands, places, destinations, designers). VERIFY every candidate with
+   qloo_search before including it; use the qloo_id, canonical name and type it returns. Drop candidates that
    Qloo does not return. Keep Qloo calls economical (there is a per-run cap) and batch your thinking first.
 4. Use qloo_related on your strongest verified entities to expand into brands, designers and aesthetics that
    are relevant to interiors and furnishing (domain "brand" / "designer" / "place").
@@ -38,6 +38,16 @@ Method:
    should reflect how durable the signal is (many posts = high, a single post = low).
 6. style_summary: 2-3 sentences describing the person's likely interior/visual taste, grounded in the themes.
    aesthetic_tags: short plain-language visual/interior descriptors (2-4 words each), derived from the evidence.
+
+Hard rules about Qloo (the final profile is machine-checked against what the tools really returned):
+- NEVER write tool outputs yourself and never type a "result" of qloo_search / qloo_related / qloo_taste_tags in
+  your own text or code comments. Only use qloo_id values, names and types copied from real tool output that the
+  system showed you after you called the tool.
+- Never invent, remember or reuse ids from anywhere else. An id that no tool returned in this run is rejected, and
+  so is a name or type that does not match what Qloo returned for that id.
+- For countries and cities (Norway, Tokyo, ...) call qloo_search with type_hint="destination" and use type
+  "destination". Use type "place" only for a specific venue, shop or business.
+- If qloo_search returns no good match (low score, or a different thing), drop the candidate; do not force it.
 Finish by calling SUBMIT(profile=...) with a valid TasteProfile.
 """
 
@@ -85,9 +95,24 @@ def inputs() -> dict:
     return {"posts_overview": load_summary(), "posts": load_posts(), "music": load_music()}
 
 
-def extract_taste(qloo_call_cap: int = qloo.DEFAULT_CALL_CAP) -> TasteProfile:
-    """Run the full extraction (makes real LLM calls)."""
-    _, sub_lm = configure_lms()
+def run_extraction(qloo_call_cap: int = qloo.DEFAULT_CALL_CAP) -> dict:
+    """Run the full extraction (makes real LLM calls) inside a Qloo provenance run.
+
+    Returns {"profile", "prediction", "lms", "registry"}; ``registry``/Qloo call log stay available through
+    ``qloo.last_run()`` even if the RLM raises (the run is always ended).
+    """
+    lm, sub_lm = configure_lms()
     qloo.reset(qloo_call_cap)
-    result = build_program(sub_lm)(**inputs())
-    return result.profile
+    qloo.start_run()
+    out: dict = {"lms": {"main": lm, "sub": sub_lm}}
+    try:
+        out["prediction"] = build_program(sub_lm)(**inputs())
+        out["profile"] = out["prediction"].profile
+    finally:
+        out["registry"] = qloo.end_run()
+    return out
+
+
+def extract_taste(qloo_call_cap: int = qloo.DEFAULT_CALL_CAP) -> TasteProfile:
+    """Run the full extraction and return the profile (see ``run_extraction`` for logs/registry)."""
+    return run_extraction(qloo_call_cap)["profile"]

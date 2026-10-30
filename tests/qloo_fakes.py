@@ -22,6 +22,8 @@ class FakeQloo:
         self.requests: list[tuple[str, dict, str]] = []
         self.search_results: dict[str, list[str]] = {}   # query -> names returned (default: [query])
         self.statuses: list[int] = []                     # popped one per request before normal handling
+        self.retry_headers: dict = {}                     # headers sent with non-200 statuses
+        self.search_by_type: dict[tuple[str, str], list] = {}  # (query, types or "") -> names or (name, id) pairs
 
     def __call__(self, url: str, key: str):
         parsed = urllib.parse.urlparse(url)
@@ -30,13 +32,14 @@ class FakeQloo:
         if self.statuses:
             st = self.statuses.pop(0)
             if st != 200:
-                return st, '{"error":"nope"}', {}
+                return st, '{"error":"nope"}', dict(self.retry_headers)
         if parsed.path == "/search":
             q = params["query"]
-            names = self.search_results.get(q, [q])
-            res = [{"name": n, "entity_id": eid(n), "types": [params.get("types", "urn:entity:artist")],
+            names = self.search_by_type.get((q, params.get("types", "")), self.search_results.get(q, [q]))
+            pairs = [n if isinstance(n, tuple) else (n, eid(n)) for n in names]
+            res = [{"name": n, "entity_id": i, "types": [params.get("types", "urn:entity:artist")],
                     "popularity": 0.5, "tags": [{"name": "T", "tag_id": "urn:tag:genre:t"}],
-                    "properties": {"short_description": "d"}} for n in names]
+                    "properties": {"short_description": "d"}} for n, i in pairs]
             return 200, json.dumps({"results": res}), {}
         if parsed.path == "/v2/tags":
             return 200, json.dumps({"results": {"tags": [

@@ -1,19 +1,44 @@
 """Pydantic schemas for the Ptah taste profile."""
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+from . import qloo
 
 
 class QlooEntity(BaseModel):
-    """A taste entity grounded in the Qloo taste graph."""
+    """A taste entity grounded in the Qloo taste graph.
 
-    qloo_id: str = Field(description="Qloo entity id, as returned by qloo_search / qloo_related.")
-    name: str = Field(description="Canonical entity name as returned by Qloo.")
-    type: str = Field(description="Entity type, e.g. artist, movie, brand, place, book, designer.")
+    Validation is the guardrail against invented entities: ``qloo_id`` must be a Qloo entity UUID (stored
+    uppercase), and while a run is active (``qloo.start_run()``) the id/name/type must match something
+    qloo_search / qloo_related really returned. Outside a run (loading a saved profile) only the format is checked.
+    """
+
+    qloo_id: str = Field(
+        description="Qloo entity UUID copied exactly from real qloo_search / qloo_related output (never invented).")
+    name: str = Field(description="Canonical entity name exactly as returned by Qloo.")
+    type: str = Field(
+        description="Entity type as returned by Qloo, e.g. artist, movie, brand, place, book, designer; "
+                    "use destination for countries and cities.")
     evidence: str = Field(
         description="Short reason this entity belongs to the user's taste, citing post ids or an artist from music."
     )
     confidence: float = Field(ge=0.0, le=1.0, description="Confidence 0-1 that this is a durable taste signal.")
+
+    @field_validator("qloo_id")
+    @classmethod
+    def _uuid_format(cls, v: str) -> str:
+        v = v.strip()
+        if v.startswith("stub_") and qloo.is_stub():   # dry runs without a Qloo key use marked stub ids
+            return v
+        return qloo.normalize_uuid(v)
+
+    @model_validator(mode="after")
+    def _provenance(self) -> "QlooEntity":
+        problem = qloo.check_entity(self.qloo_id, self.name, self.type)   # no-op unless a run is active
+        if problem:
+            raise ValueError(problem)
+        return self
 
 
 class Theme(BaseModel):

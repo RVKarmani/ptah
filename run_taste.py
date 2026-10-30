@@ -78,17 +78,89 @@ def main() -> int:
         sys.exit("QLOO_API_KEY is not set, so Qloo tools are stubs. Set the key, or pass --allow-stub-qloo "
                  "to test the LLM loop knowing the profile will contain placeholder entities.")
 
-    from ptah.taste import extract_taste
+    return real_run(args)
 
-    profile = extract_taste(args.qloo_cap)
-    args.out.write_text(profile.model_dump_json(indent=2), encoding="utf-8")
-    print(f"wrote {args.out}")
-    print(f"entities: {len(profile.entities)}  themes: {len(profile.themes)}  Qloo calls: {qloo.calls_used()}")
-    for t in sorted(profile.themes, key=lambda t: -t.post_count)[:5]:
-        print(f"  theme {t.name} ({t.post_count})")
-    print("tags:", ", ".join(profile.aesthetic_tags))
-    print("style:", profile.style_summary)
-    return 0
+
+def summary_md(info: dict) -> str:
+    """Human-readable run summary (themes, kept/dropped entities with reasons, models, iterations, calls)."""
+    prof = info.get("profile") or {}
+    lines = [f"# Taste run {info['stamp']}", "", f"- status: **{info['status']}**" + (f" ({info['error']})" if info.get("error") else ""),
+             f"- models: main `{info['models']['main']}`, sub `{info['models']['sub']}`",
+             f"- RLM iterations (trajectory steps): {info.get('iterations', 'n/a')}",
+             f"- LLM calls: {info.get('llm_calls', 'n/a')}",
+             f"- Qloo: {info['qloo_stats']['calls']} live calls, {info['qloo_stats']['cache_hits']} cache hits, "
+             f"{info['qloo_stats']['n429']} x 429, {info['qloo_stats']['retries']} retries; "
+             f"{info['qloo_tool_calls']} tool calls, {info['qloo_seen']} distinct entities returned",
+             "", "## Themes", ""]
+    for t in sorted(prof.get("themes") or [], key=lambda t: -t["post_count"]):
+        lines.append(f"- {t['name']} ({t['post_count']} posts)")
+    lines += ["", f"## Entities kept ({len(info['kept'])})", ""]
+    lines += [f"- {e['name']} [{e['type']}] {e['qloo_id']} conf {e['confidence']}" for e in info["kept"]]
+    lines += ["", f"## Entities dropped ({len(info['dropped'])})", ""]
+    lines += [f"- {d['entity'].get('name')} [{d['entity'].get('type')}]: {'; '.join(d['reasons'])}" for d in info["dropped"]] or ["- none"]
+    lines += ["", "## Style", "", f"tags: {', '.join(prof.get('aesthetic_tags') or [])}", "", prof.get("style_summary", ""), ""]
+    return "\n".join(lines)
+
+
+def real_run(args) -> int:
+    """Real extraction with persistent logs; the run directory is written even if the run fails."""
+    import datetime as dt
+    import os
+    import traceback
+
+    from ptah import profile_check, taste
+    from ptah.runlog import RunDir
+
+    info: dict = {"status": "failed", "error": None, "kept": [], "dropped": [], "profile": None,
+                  "models": {"main": os.environ.get("PTAH_LM", "?"),
+                             "sub": os.environ.get("PTAH_SUB_LM") or os.environ.get("PTAH_LM", "?")}}
+    result: dict = {}
+    with RunDir() as run:
+        info["stamp"] = run.path.name
+        print(f"run directory: {run.path}")
+        try:
+            result = taste.run_extraction(args.qloo_cap)
+            raw = json.loads(result["profile"].model_dump_json())
+            run.write_json("profile.raw.json", raw)
+            seen = result["registry"]["seen"]
+            clean, dropped = profile_check.check_profile(raw, seen)
+            run.write_json("profile.json", clean)
+            args.out.parent.mkdir(parents=True, exist_ok=True)
+            args.out.write_text(json.dumps(clean, indent=2, ensure_ascii=False), encoding="utf-8")
+            info.update(status="ok", profile=clean, kept=clean["entities"], dropped=dropped)
+            print(f"wrote {args.out}")
+            print(f"entities: {len(clean['entities'])} kept, {len(dropped)} dropped  themes: {len(clean['themes'])}  "
+                  f"Qloo calls: {qloo.calls_used()}")
+            for d in dropped:
+                print("  DROPPED", d["entity"].get("name"), "-", "; ".join(d["reasons"]))
+            for t in sorted(clean["themes"], key=lambda t: -t["post_count"])[:5]:
+                print(f"  theme {t['name']} ({t['post_count']})")
+            print("tags:", ", ".join(clean["aesthetic_tags"]))
+            print("style:", clean["style_summary"])
+        except BaseException as e:  # noqa: BLE001 - logs must survive any failure, including Ctrl-C
+            info["error"] = f"{type(e).__name__}: {e}"[:500]
+            traceback.print_exc()
+            status = 1
+        else:
+            status = 0
+        finally:
+            lastrun = qloo.last_run()
+            run.write_json("qloo_calls.json", lastrun["calls"])
+            pred = result.get("prediction")
+            traj = getattr(pred, "trajectory", None) if pred is not None else None
+            if traj is not None:
+                run.write_json("trajectory.json", traj)
+                info["iterations"] = len(traj)
+            lms = result.get("lms") or {}
+            hist = [len(getattr(lm, "history", []) or []) for lm in {id(v): v for v in lms.values()}.values()]
+            info["llm_calls"] = sum(hist) if hist else "n/a"
+            info["qloo_stats"] = qloo.stats()
+            info["qloo_tool_calls"] = len(lastrun["calls"])
+            info["qloo_seen"] = len(lastrun["seen"])
+            info.setdefault("stamp", dt.datetime.now().strftime("%Y-%m-%d_%H%M"))
+            run.write_text("summary.md", summary_md(info))
+            print(f"run logs: {run.path}")
+    return status
 
 
 if __name__ == "__main__":
