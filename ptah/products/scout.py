@@ -140,7 +140,7 @@ def build_queries(slot: Slot, max_queries: int = 2) -> List[Dict[str, Any]]:
         noun = _ART_NOUN.get(slot.template, "art print")
         lo, hi = art_price_band(slot)
         subj = (slot.inspired_by or "").strip()
-        style = " ".join(slot.style_keywords[:3])
+        style = art_style_words(slot)
         if subj:
             qs.append({"q": f"{subj} {noun}", "min_price": lo, "max_price": hi, "why": f"subject '{subj}' from the slot's inspiration"})
         if style:
@@ -162,8 +162,22 @@ def build_queries(slot: Slot, max_queries: int = 2) -> List[Dict[str, Any]]:
     return out[:max_queries]
 
 
+_ART_DROP = _STOP | {"frame", "framed", "oak", "thin", "black", "wood", "wooden", "light", "gallery", "inspired", "small", "large", "big",
+                     "style", "print", "prints", "poster", "art", "artwork", "painting", "canvas", "x", "cm"}
+
+
+def art_style_words(slot: Slot, limit: int = 4) -> str:
+    """Subject-matter / colour / mood words of the slot's style keywords (frame and 'print' words dropped: they are in the noun)."""
+    out: List[str] = []
+    for kw in slot.style_keywords:
+        for t in tokens(kw):
+            if t not in _ART_DROP and not t.isdigit() and t not in out:
+                out.append(t)
+    return " ".join(out[:limit])
+
+
 def art_price_band(slot: Slot) -> Tuple[int, int]:
-    return 8, int(round((60 + 0.035 * slot.mid_area) / 25.0) * 25)
+    return 8, int(round((50 + 0.03 * slot.mid_area) / 25.0) * 25)
 
 
 CATEGORY_NOUN = {
@@ -285,7 +299,7 @@ def aspect_penalty(aspect: float, slot: Slot) -> float:
     if lo <= aspect <= hi:
         return 0.0
     d = math.log(lo / aspect) if aspect < lo else math.log(aspect / hi)
-    return 8.0 * d
+    return 20.0 * d
 
 
 def keyword_score(slot: Slot, title: str) -> Tuple[float, List[str]]:
@@ -339,6 +353,8 @@ class Candidate:
     crop_conf: float = 0.0
     colors: Optional[Dict[str, Optional[str]]] = None
     aspect: Optional[float] = None
+    aspect_pen: float = 0.0
+    evaluated: bool = False
     score: float = 0.0
 
     @property
@@ -449,86 +465,104 @@ class ScoutResult:
     note: str = ""
 
 
-def _gather(slot: Slot, client: SerpApiClient, queries: List[Dict[str, Any]], classify) -> Tuple[List[Candidate], List[Tuple[str, str]], int]:
-    cands: Dict[str, Candidate] = {}
-    rejected: List[Tuple[str, str]] = []
-    n_resp = 0
-    for q in queries:
-        try:
-            # only max_price goes to Google: a min+max pair is appended to the query text ("between $8 and $249") and
-            # empties the results; the lower bound is applied locally in price_score
-            resp = client.search(q["q"], max_price=q.get("max_price"))
-        except BudgetExceeded:
-            raise
-        n_resp += 1
-        for res in client.results(resp):
-            ok, digital, why = classify(res)
-            if not ok:
-                rejected.append((res.get("title") or "", why))
-                continue
-            key = str(res.get("product_id") or res.get("title"))
-            if key in cands:
-                continue
-            c = pre_score(slot, res, q.get("min_price"), q.get("max_price"))
-            c.query, c.digital = q["q"], digital
-            if digital:
-                c.pre -= 6.0
-                c.notes.append("digital download")
-            cands[key] = c
-    return sorted(cands.values(), key=lambda c: -c.pre), rejected, n_resp
+def _gather(slot: Slot, client: SerpApiClient, q: Dict[str, Any], classify, pool: Dict[str, Candidate], rejected: List[Tuple[str, str]]) -> List[Candidate]:
+    """Run one query, classify its results and add the new ones to ``pool``.  -> the new candidates."""
+    # only max_price goes to Google: a min+max pair is appended to the query text ("between $8 and $249") and empties the
+    # results; the lower bound is applied locally in price_score
+    resp = client.search(q["q"], max_price=q.get("max_price"))
+    new: List[Candidate] = []
+    for res in client.results(resp):
+        ok, digital, why = classify(res)
+        if not ok:
+            rejected.append((res.get("title") or "", why))
+            continue
+        key = str(res.get("product_id") or res.get("title"))
+        if key in pool:
+            continue
+        c = pre_score(slot, res, q.get("min_price"), q.get("max_price"))
+        c.query, c.digital = q["q"], digital
+        if digital:
+            c.pre -= 6.0
+            c.notes.append("digital download")
+        pool[key] = c
+        new.append(c)
+    return new
 
 
-def scout_slot(slot: Slot, client: SerpApiClient, *, top_images: int = 10, details: bool = True, session: Any = None,
-               min_good: int = 3) -> ScoutResult:
-    """Find the best real product for a slot.  Art slots download + crop thumbnails of the best ``top_images`` text matches."""
-    queries = build_queries(slot, max_queries=2)
+def _evaluate(slot: Slot, c: Candidate, session: Any = None) -> None:
+    """Download the thumbnail, cut the print out (art), colours, final score."""
+    url = c.result.get("thumbnail") or c.result.get("serpapi_thumbnail")
+    im = fetch_image(url, session)
+    c.evaluated = True
+    if im is None:
+        c.notes.append("image download failed")
+        c.score = c.pre - 4.0
+        return
+    c.source_image = im
+    if slot.is_art:
+        box, conf = artimg.find_artwork_rect(im)
+        art = im.crop(box)
+        c.image, c.crop_conf = art, conf
+        c.aspect = art.width / float(art.height)
+        if conf >= 0.5:
+            c.notes.append(f"print cut out of the photo (confidence {conf:.2f})")
+    else:
+        c.image, c.crop_conf = im, 1.0
+    c.colors = extract_colors(c.image)
+    s = c.pre
+    if slot.is_art:
+        s += 1.5 if c.crop_conf >= 0.7 else (0.8 if c.crop_conf >= 0.5 else -1.5)
+        ms = min(c.image.size)
+        s += 0.5 if ms >= 300 else (0.0 if ms >= 180 else -0.7)
+        if not (0.35 <= c.aspect <= 2.8):
+            s -= 3.0
+        c.aspect_pen = aspect_penalty(c.aspect, slot)
+        if c.aspect_pen:
+            c.notes.append(f"aspect {c.aspect:.2f} outside the slot's {slot.w_range[0] / slot.h_range[1]:.2f}-{slot.w_range[1] / slot.h_range[0]:.2f}")
+        s -= c.aspect_pen
+    s += 0.8 * palette_fit(c.colors, slot.colors)
+    c.score = s
+
+
+def _satisfied(slot: Slot, c: Optional[Candidate]) -> bool:
+    if c is None or c.image is None or c.digital:
+        return False
+    if slot.is_art:
+        return c.crop_conf >= 0.5 and c.aspect_pen == 0 and (not subject_tokens(slot.inspired_by) or c.pre >= 3.5)
+    return True
+
+
+def scout_slot(slot: Slot, client: SerpApiClient, *, top_images: int = 24, details: bool = True, session: Any = None,
+               max_queries: int = 2) -> ScoutResult:
+    """Find the best real product for a slot.  Queries run one at a time; the next one only when the best candidate so far is
+    unusable (digital file, no clear print, aspect that does not fit the slot).  The best ``top_images`` text matches are
+    downloaded, cut out and scored together."""
+    queries = build_queries(slot, max_queries=max_queries)
     classify = classify_art if slot.is_art else (lambda r: classify_generic(slot, r))
     if not queries:
         return ScoutResult(slot, [], None, [], [], note="no query could be built")
-    # run the first query; add the second only if the first leaves too few usable candidates
-    ranked, rejected, _ = _gather(slot, client, queries[:1], classify)
-    used = queries[:1]
-    good = [c for c in ranked if not c.digital]
-    if len(queries) > 1 and len(good) < min_good + 2:
-        r2, rej2, _ = _gather(slot, client, queries, classify)  # cached first query, live second
-        ranked, rejected = r2, rejected + rej2
-        used = queries
-    if not ranked:
+    pool: Dict[str, Candidate] = {}
+    rejected: List[Tuple[str, str]] = []
+    used: List[Dict[str, Any]] = []
+    best: Optional[Candidate] = None
+    for q in queries:
+        try:
+            new = _gather(slot, client, q, classify, pool, rejected)
+        except BudgetExceeded:
+            if used:
+                break
+            raise
+        used.append(q)
+        for c in sorted(new, key=lambda c: -c.pre)[:top_images]:   # thumbnails are free: look at the best of each query
+            _evaluate(slot, c, session)
+        evald = [c for c in pool.values() if c.evaluated and c.image is not None]
+        best = max(evald, key=lambda c: c.score) if evald else None
+        if _satisfied(slot, best):
+            break
+    ranked = sorted((c for c in pool.values() if c.evaluated), key=lambda c: -c.score) + sorted((c for c in pool.values() if not c.evaluated), key=lambda c: -c.pre)
+    if not pool:
         return ScoutResult(slot, used, None, [], rejected, note="no acceptable result")
-    short = ranked[:top_images]
-    for c in short:
-        url = c.result.get("thumbnail") or c.result.get("serpapi_thumbnail")
-        im = fetch_image(url, session)
-        if im is None:
-            c.notes.append("image download failed")
-            c.score = c.pre - 4.0
-            continue
-        c.source_image = im
-        if slot.is_art:
-            box, conf = artimg.find_artwork_rect(im)
-            art = im.crop(box)
-            c.image, c.crop_conf = art, conf
-            c.aspect = art.width / float(art.height)
-            if conf >= 0.5:
-                c.notes.append(f"print cut out of the photo (confidence {conf:.2f})")
-        else:
-            c.image, c.crop_conf = im, 1.0
-        c.colors = extract_colors(c.image)
-        s = c.pre
-        if slot.is_art:
-            s += 1.5 if c.crop_conf >= 0.7 else (0.8 if c.crop_conf >= 0.5 else -1.5)
-            ms = min(c.image.size)
-            s += 0.5 if ms >= 300 else (0.0 if ms >= 180 else -0.7)
-            if not (0.35 <= c.aspect <= 2.8):
-                s -= 3.0
-            ap = aspect_penalty(c.aspect, slot)
-            if ap:
-                c.notes.append(f"aspect {c.aspect:.2f} outside the slot's {slot.w_range[0] / slot.h_range[1]:.2f}-{slot.w_range[1] / slot.h_range[0]:.2f}")
-            s -= ap
-        s += 0.8 * palette_fit(c.colors, slot.colors)
-        c.score = s
-    ranked = sorted(short, key=lambda c: -c.score) + ranked[top_images:]
-    chosen = ranked[0] if ranked and ranked[0].image is not None else None
+    chosen = best
     res = ScoutResult(slot, used, chosen, ranked, rejected)
     if chosen is None:
         res.note = "no candidate image could be used"

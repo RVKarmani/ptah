@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from ptah.env import ROOT
+from ptah.products.enrich import classify_material
 from ptah.products.scout import ScoutResult, Slot, direct_link, scout_slot, slot_from_item, upscale_for_texture, clean_title
 from ptah.products.serpapi import BudgetExceeded, SerpApiClient, SerpApiError
 
@@ -93,10 +94,19 @@ def apply_result(item: Dict[str, Any], res: ScoutResult, bundle: Path, me_dir: O
     item["url"] = link or r.get("product_link")
     item["source"] = c.source
     if c.colors:
-        item["colors"] = c.colors
+        # the viewer paints the frame from colors.secondary (artT/posterT): keep the DESIGNED frame colour there, the print's own
+        # colours stay available as product.image_colors
+        designed = dict(item.get("colors") or {})
+        cols = dict(c.colors)
+        if slot.is_art and designed.get("secondary"):
+            cols["secondary"] = designed["secondary"]
+        item["colors"] = cols
     if res.dims:
         item["w"], item["h"] = res.dims
         item["dims_estimated"] = False
+    mat = classify_material(c.title)
+    if mat.get("primary") and not slot.is_art:   # the real product's material, when its title names one
+        item["material"] = {"primary": mat["primary"], "secondary": mat.get("secondary") or (item.get("material") or {}).get("secondary")}
     item["designed"] = False
     item["scouted"] = True
     reasons = "; ".join(c.notes[:3])
@@ -105,7 +115,7 @@ def apply_result(item: Dict[str, Any], res: ScoutResult, bundle: Path, me_dir: O
         "title": c.title, "source": c.source, "price": price, "extracted_price": c.price, "link": link, "google_link": r.get("product_link"),
         "product_id": r.get("product_id"), "thumbnail": r.get("thumbnail"), "query": c.query, "score": round(c.score, 2),
         "image_file": rel, "crop_confidence": round(c.crop_conf, 2), "aspect": round(c.aspect, 3) if c.aspect else None,
-        "listed_dimensions": listed, "scouted_at": int(time.time()),
+        "listed_dimensions": listed, "image_colors": c.colors, "scouted_at": int(time.time()),
     }
     return item["product"]
 
@@ -161,6 +171,7 @@ def main(argv=None) -> int:
     ap.add_argument("--only", choices=["art", "all"], default="art")
     ap.add_argument("--max-searches", type=int, default=10, help="max LIVE SerpApi calls this run (cache hits are free)")
     ap.add_argument("--no-details", action="store_true", help="skip the product-detail call (direct store link) for chosen products")
+    ap.add_argument("--details-all", action="store_true", help="also fetch product details (1 search each) for furniture / decor picks; art always does")
     ap.add_argument("--no-relayout", action="store_true")
     ap.add_argument("--publish-dir", default=str(ROOT / "viewer" / "public" / "me"), help="where the bundle is copied for the viewer; 'none' disables")
     ap.add_argument("--slots", help="comma-separated item ids to scout (default: all selected)")
@@ -189,7 +200,7 @@ def main(argv=None) -> int:
         slot = slot_from_item(it)
         before = (it.get("w"), it.get("h"))
         try:
-            res = scout_slot(slot, client, details=not args.no_details)
+            res = scout_slot(slot, client, details=(not args.no_details) and (slot.is_art or args.details_all))
         except BudgetExceeded as e:
             log(f"stopping: {e}")
             break
