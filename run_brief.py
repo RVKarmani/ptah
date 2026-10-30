@@ -38,10 +38,14 @@ def summarize(brief: dict) -> None:
     print("discovery:")
     for d in brief["discovery"]:
         print(f"  {d['type']}: {d['name']} {d['affinity']} why: {why(d)}")
-    print(f"\nnetwork calls: {brief['qloo']['network_calls']}")
+    st = qloo.stats()
+    print(f"\nnetwork calls: {brief['qloo']['network_calls']}  cache hits: {st['cache_hits']}  "
+          f"429s: {st['n429']}  retries: {st['retries']}")
 
 
 def main() -> int:
+    import logging
+    logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")  # shows Qloo 429 retries
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--profile", type=Path, help="TasteProfile JSON (default: data/taste_profile.json if present)")
     ap.add_argument("--music", type=Path, default=DATA_DIR / "music.json", help="seed source when no profile")

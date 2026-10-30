@@ -225,7 +225,7 @@ def get(path: str, params: dict[str, Any]) -> dict:
             if attempt + 1 < MAX_ATTEMPTS:
                 _state["retries"] += 1
                 wait = _retry_wait(headers, attempt)
-                log.info("Qloo %s -> %s; retrying in %.1fs", path, last, wait)
+                log.warning("Qloo %s -> %s; retrying in %.1fs", path, last, wait)
                 time.sleep(wait)
             continue
         raise QlooError(f"{path}: HTTP {status}: {body[:200]!r}")
