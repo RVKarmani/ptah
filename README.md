@@ -41,13 +41,13 @@ Data path: defaults to `sample/`; override with `?data=<url prefix>` (e.g. `?dat
 
 **Viewer v2 (models, lights, finishes).** Every item is a low-poly procedural model chosen by `model.template` (fitted to its w x d x h, honouring `y`),
 with PBR materials from `material.*` and colours from `colors.*`. Items with `light` become real lights (point / spot / rect-area for LED strips) at
-`emit_offset`, coloured by Kelvin or `rgb`, with glowing shades. Pipeline: three.js + N8AO ambient occlusion + bloom + AgX tone mapping (toggle ACES in the Room tab).
-- Dock under the room: scenes (Day, Evening, Reading, Night, All off) are presets over the ambient/task/accent layers (default: Evening) and a time-of-day slider drives the sun, which only enters through the real window openings, plus sky/IBL falling off at night.
-- Lighting tab: each layer has an on/off and dimmer, fixtures (collapsed) have on/off, dimmer and colour temperature. If `lighting.json` exists: lux heatmap toggle, zone pins, layer coverage, focal points and issues (per scene when `scenes.<name>` is present).
-- Room tab: floor presets (light_oak, mid_oak, dark_wood, herringbone, concrete, tile_light, tile_dark, carpet) at real-world tile scale, wall colour, suggested paint swatch ("can't paint" state when `can_paint` is false), render quality toggles.
+`emit_offset`, coloured by Kelvin or `rgb`, with glowing shades. Pipeline: three.js + ambient occlusion + glow + filmic tone mapping (URL params `ao=0`, `bloom=0`, `tone=aces` for slow machines; no UI toggles).
+- Scene chips under the room: Day, Evening, Reading, Night, All off are presets over the ambient/task/accent layers (default: Evening). The time-of-day slider lives in the Lighting tab under "Adjust lighting" and drives the sun, which only enters through the real window openings, plus sky/IBL falling off at night.
+- Lighting tab: a plain-language summary (light mix, zones, suggestions; per scene when `scenes.<name>` is present) and one collapsed "Adjust lighting" section with time of day, group brightness, individual lights (on/off, brightness, warmer to cooler) and the light map overlay (the only place lux appears).
+- Room tab: floor presets (light_oak, mid_oak, dark_wood, herringbone, concrete, tile_light, tile_dark, carpet) at real-world tile scale, wall colour, suggested paint swatch ("can't paint" state when `can_paint` is false).
 - Floor textures are procedural by default. To use real CC0 PBR maps put `diffuse|normal|roughness.jpg` in `viewer/public/textures/<preset>/` (`npm run fetch-textures`, see `viewer/public/textures/DOWNLOAD.md`); files win when present.
 - All v2 fields are optional; old data renders with default models and no lights. Test data: `?data=sample-lit/` (fully lit room), `?data=sample-legacy/` (v1 fields only). Other URL params: `scene=day|evening|reading|night|all_off`, `time=21.5`, `floor=herringbone`, `heat=1`, `tab=lighting|room`, `ao=0`, `bloom=0`, `tone=aces`, `select=<item id>`, `cam=x,y,z,tx,ty,tz`.
-- Needs `npm install` again (new deps: `n8ao`, `postprocessing`). Screenshots: `viewer/screenshots/`.
+- Screenshots: `viewer/screenshots/`.
 
 
 ## Layout planner
@@ -97,6 +97,17 @@ window patches, strength by hour (0 before 06:00 / after 18:00, ~15 klux outdoor
 `GLARE_RISK`, each with a `suggest` ({category, near | attach+side | above}) the agent can turn into a product search plus a mounting constraint.
 
 Tests: `pytest tests` (layout, mounts, enrichment, lighting).
+
+
+## UI notes (viewer polish pass)
+- **One primary control:** the lighting scene chips floating under the room. Everything advanced (time of day, group and per-light brightness, warmer/cooler tone, light map) sits behind a single collapsed "Adjust lighting" section in the Lighting tab. No rendering jargon in the UI.
+- **Camera:** opens with a short swoop to a default view chosen so the key pieces face the camera (here: TV wall, sofa and the guitar corner). Selecting a piece eases in on its front; Esc, "All items" or deselecting eases back to where you were; "Reset view" returns to the default. Zoom and pan are limited so you cannot get lost or go under the floor.
+- **Lights** are a fixed set that fades in and out (about 600 ms) instead of being added and removed, so switching scenes never stutters or recompiles shaders. Selected and hovered pieces get a soft outline rather than a box.
+- **Detail panel:** live turnable 3D preview (photo toggle when a product image exists), human placement wording ("Against the wall", "Facing the sofa", "On shelf 2"), and "Why this fits you". Put a short explanation chain on an item as `"why_chain": {"signals": ["A", "B"], "reading": "C"}`; without it the panel shows free-text `why` if real, otherwise a dashed, labelled "Sample" placeholder.
+- **Design system** (`viewer/src/styles.css`): type scale 11/13/14/17/20, 4/8 px spacing, radii 8/12/16/pill, one terracotta accent for primary actions, selected states and switches, one focus ring. All controls are keyboard operable.
+- **Mobile (<= 820 px):** compact header; the panel becomes a bottom sheet (drag handle toggles peek / expanded).
+- **States:** loading screen while the scene compiles, friendly errors if data fails, WebGL cannot start or the GPU context is lost.
+- **Sample room:** a living room. The sofa faces a wall-mounted TV (owned, size assumed: 55-inch, about 123 x 71 cm) above a media console; the bookshelf, guitar, amp and spotlight form a secondary music corner on the east wall.
 
 
 ## Qloo usage

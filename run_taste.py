@@ -62,6 +62,8 @@ def dry_run() -> int:
 
 
 def main() -> int:
+    from ptah.env import load_dotenv
+    load_dotenv()
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--dry-run", action="store_true", help="skip the LLM; exercise tools and schemas")
     ap.add_argument("--qloo-cap", type=int, default=qloo.DEFAULT_CALL_CAP, help="max Qloo tool calls per run")

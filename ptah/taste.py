@@ -53,7 +53,9 @@ ExtractTaste.__doc__ = INSTRUCTIONS
 
 
 def configure_lms() -> tuple[dspy.LM, dspy.LM]:
-    """Create LMs from env: PTAH_LM (required), PTAH_SUB_LM (optional, defaults to PTAH_LM)."""
+    """Create LMs from env (or .env): PTAH_LM (required), PTAH_SUB_LM (optional, defaults to PTAH_LM)."""
+    from .env import load_dotenv
+    load_dotenv()
     main = os.environ.get("PTAH_LM")
     if not main:
         raise SystemExit(
