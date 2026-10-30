@@ -87,7 +87,7 @@
     {
       "item_id": "lamp-1",
       "x": 398.0,
-      "z": 294.0,
+      "z": 268.0,
       "rotation_deg": 180,
       "satisfied": [
         "side_of:sofa-1",
@@ -102,7 +102,7 @@
     {
       "item_id": "shelf-1",
       "x": 404.0,
-      "z": 230.0,
+      "z": 95.0,
       "rotation_deg": 270,
       "satisfied": [
         "edge",
@@ -173,7 +173,7 @@
     {
       "item_id": "strip-1",
       "x": 419.0,
-      "z": 230.0,
+      "z": 95.0,
       "rotation_deg": 270,
       "y": 178,
       "mount": "attach",
@@ -335,7 +335,7 @@
     {
       "item_id": "book-stack-1",
       "x": 403.6,
-      "z": 212.4,
+      "z": 77.4,
       "rotation_deg": 270,
       "y": 75.6,
       "mount": "on_top_of",
@@ -352,7 +352,7 @@
     {
       "item_id": "vase-1",
       "x": 403.6,
-      "z": 247.4,
+      "z": 112.4,
       "rotation_deg": 270,
       "y": 75.6,
       "mount": "on_top_of",
@@ -369,7 +369,7 @@
     {
       "item_id": "vinyl-crate-1",
       "x": 403.6,
-      "z": 230.4,
+      "z": 95.4,
       "rotation_deg": 270,
       "y": 6,
       "mount": "on_top_of",
@@ -446,5 +446,5 @@
     }
   ],
   "unplaced": [],
-  "score": 0.997
+  "score": 0.999
 }

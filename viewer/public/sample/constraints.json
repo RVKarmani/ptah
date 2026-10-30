@@ -102,7 +102,7 @@
   "zone": "music_corner",
   "hint": {
    "x": 404,
-   "z": 250,
+   "z": 95,
    "rotation_deg": 270
   },
   "constraints": [
