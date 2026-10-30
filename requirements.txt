@@ -4,3 +4,4 @@ pillow>=10.0
 numpy>=1.26
 matplotlib>=3.7  # tools/render_layout.py only
 pytest>=8  # tests
+requests>=2.31  # SerpApi client + thumbnail download (ptah/products)

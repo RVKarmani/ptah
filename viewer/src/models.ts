@@ -7,6 +7,7 @@ import { boxProjectUV, fitGeometry, makeCanvas, toTexture } from './gfx'
 import { categoryColor } from './palette'
 import { effColors, hashStr, mulberry32, safeColor } from './color'
 import { sofaMetrics, shelfMetrics } from './metrics'
+import { dataBase, resolveUrl } from './data'
 import { amp, bookStack, candle, cushion, guitar, guitarHanger, smallPlant, throwT, tray, vase, vinylCrate } from './decor'
 
 export { sofaMetrics, shelfMetrics }
@@ -723,8 +724,30 @@ function abstractArt(item: Item, aspect: number): THREE.CanvasTexture {
   return toTexture(c, true)
 }
 
+/**
+ * Real print: when the item carries an `image` (product scout), load it onto the picture plane in place of the generated
+ * placeholder.  The image is cover-fitted (never stretched); the scout already cut it to the print's aspect ratio.
+ */
+function applyProductImage(item: Item, mat: THREE.MeshStandardMaterial, planeW: number, planeH: number) {
+  const url = resolveUrl(item.image, dataBase())
+  if (!url) return
+  new THREE.TextureLoader().load(url, (t) => {
+    t.colorSpace = THREE.SRGBColorSpace
+    t.anisotropy = 8
+    const img = t.image as { width: number; height: number }
+    const ia = img.width / img.height, pa = planeW / planeH
+    if (ia > pa) { t.repeat.set(pa / ia, 1); t.offset.set((1 - pa / ia) / 2, 0) }
+    else { t.repeat.set(1, ia / pa); t.offset.set(0, (1 - ia / pa) / 2) }
+    mat.map?.dispose()
+    mat.map = t
+    mat.color.set('#ffffff')
+    mat.needsUpdate = true
+  })
+}
+
 function artT(B: Builder, mirror: boolean, poster = false) {
   const { w, d, h, hd } = B
+  const item = B.item
   if (poster) return posterT(B)
   const ft = clamp(Math.min(w, h) * 0.05, 1.6, 4.5)
   const fm = B.S
@@ -738,6 +761,7 @@ function artT(B: Builder, mirror: boolean, poster = false) {
   } else {
     const tex = abstractArt(B.item, iw / ih)
     const cm = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85 })
+    if (item.image) applyProductImage(item, cm, iw, ih)
     B.mesh(new THREE.PlaneGeometry(iw, ih), cm, 0, h / 2, hd - ft * 0.5)
     B.box(getMaterial('painted', '#f2efe9'), iw, ih, Math.max(0.5, d - ft), 0, ft, -ft * 0.3, 0.1)
   }
@@ -754,6 +778,7 @@ function posterT(B: Builder) {
   B.box(paper, iw, ih, Math.max(0.4, d - 0.8), 0, ft, -0.2, 0.1)
   const tex = abstractArt(B.item, (iw - 2 * margin) / (ih - 2 * margin))
   const pm = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8 })
+  if (B.item.image) applyProductImage(B.item, pm, iw - 2 * margin, ih - 2 * margin)
   B.mesh(new THREE.PlaneGeometry(iw - 2 * margin, ih - 2 * margin), pm, 0, h / 2, hd - 0.38)
   if (framed) {
     const fm = B.P
