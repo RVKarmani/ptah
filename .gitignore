@@ -15,3 +15,5 @@ data/
 docs/qloo_probe/
 cache/
 .venv-mac/
+# real personal taste data for local viewing (never commit)
+viewer/public/me/
