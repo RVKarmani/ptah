@@ -24,3 +24,9 @@ docs/qloo_hackathon_guide.md
 docs/qloo_api_notes.md
 docs/qloo_ref_*.md
 design/
+viewer/screenshots/
+samples/*.png
+viewer/public/sample-legacy/
+viewer/public/sample-lit/
+tools/qloo_probe*.py
+clean_profile.py

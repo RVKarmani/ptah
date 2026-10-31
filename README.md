@@ -108,7 +108,7 @@ Instagram export + things you love
 | `viewer/` | Web app: onboarding, progress screen, 3D room |
 | `samples/` | A sample room, items and constraints |
 | `tests/` | Backend tests (run offline) |
-| `docs/` | [Data contracts](docs/contracts.md) and [technical notes](docs/technical-notes.md) (every CLI flag, URL parameter and API endpoint) |
+| `docs/` | [Data contracts](docs/contracts.md) and [technical notes](docs/technical-notes.md) (configuration, commands, API, how each stage works) |
 
 ## Privacy
 
