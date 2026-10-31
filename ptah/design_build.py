@@ -199,6 +199,31 @@ def _bbox(room: Dict[str, Any]) -> Tuple[float, float]:
     return max(xs) - min(xs), max(zs) - min(zs)
 
 
+def _wall_slot_x(room: Dict[str, Any], wall_id: str, width: float, clearance: float = 20.0) -> float:
+    """Where along a wall (measured from its start) to centre a piece of this width: the middle of the wall when that spot
+    is clear of doors, otherwise the middle of the longest stretch between doors (so the main group sits centred, not in a corner)."""
+    wall = next((w for w in room.get("walls", []) if w.get("id") == wall_id), None)
+    if wall is None:
+        W, _ = _bbox(room)
+        return W / 2.0
+    (x0, z0), (x1, z1) = wall["start"], wall["end"]
+    L = ((x1 - x0) ** 2 + (z1 - z0) ** 2) ** 0.5
+    blocked = sorted((o["offset"] - clearance, o["offset"] + o["width"] + clearance)
+                     for o in room.get("openings", []) if o.get("wall") == wall_id and o.get("type") != "window")
+    free, cur = [], 0.0
+    for a, b in blocked:
+        if a > cur:
+            free.append((cur, a))
+        cur = max(cur, b)
+    if cur < L:
+        free.append((cur, L))
+    mid, half = L / 2.0, width / 2.0
+    if any(a <= mid - half and mid + half <= b for a, b in free) or not free:
+        return mid
+    a, b = max(free, key=lambda t: t[1] - t[0])
+    return (a + b) / 2.0
+
+
 def build_constraints(items: List[Dict[str, Any]], room: Dict[str, Any], base_constraints: Dict[str, Any]) -> Dict[str, Any]:
     W, D = _bbox(room)
     by_role: Dict[str, List[str]] = {}
@@ -211,7 +236,10 @@ def build_constraints(items: List[Dict[str, Any]], room: Dict[str, Any], base_co
     c: Dict[str, Any] = {}
     con, sofa, table, shelf = first("media_console"), first("main_sofa"), first("coffee_table"), first("bookshelf")
     side, plant, art = first("side_table"), first("floor_plant"), first("art_main")
-    cx = W - 130
+    by_id = {i["id"]: i for i in items}
+    # the TV wall group is centred on the free part of w1 (it used to sit a fixed 1.3 m from the right wall, which piled
+    # everything onto one side of larger rooms); w1 runs along x from 0, so the offset is the x coordinate
+    cx = _wall_slot_x(room, "w1", float(by_id[con]["w"]) if con else 160.0)
     for owned in ("tv-1", "guitar-1", "amp-1", "hanger-1", "spot-1"):
         if owned in ids and owned in base_constraints:
             c[owned] = copy.deepcopy(base_constraints[owned])
@@ -256,6 +284,12 @@ def build_constraints(items: List[Dict[str, Any]], room: Dict[str, Any], base_co
         c[art] = {"hint": {"x": 0, "z": 180}, "constraints": [{"type": "wall_mounted", "height": 120, "wall": "w4"}]}
         if "plight-1" in ids:
             c["plight-1"] = {"constraints": [{"type": "attach_to", "target": art, "side": "above"}]}
+    nook = first("reading_chair")
+    if nook:
+        # a second, quieter zone: a reading chair on the art wall, angled into the room, with its own lamp and side table
+        c[nook] = {"zone": "reading_nook", "hint": {"x": 45, "z": 215 if art else D / 2, "rotation_deg": 90}, "constraints": [{"type": "edge"}]}
+    for lp in by_role.get("reading_lamp", []):
+        c[lp] = {"zone": "reading_nook", "constraints": [{"type": "side_of", "target": nook}, {"type": "near", "target": nook}] if nook else [{"type": "edge"}]}
     for sc in by_role.get("sconce", []):
         tgt = plant or sofa
         cs = [{"type": "wall_mounted", "height": 150}]

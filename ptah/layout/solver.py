@@ -26,6 +26,12 @@ from .constraints import (
 )
 from .geometry import TOL, Rect
 
+# Visual balance: furniture (floor footprint x height) should not all pile up on one side of the room.
+# The centroid of that mass may drift BALANCE_FREE (as a fraction of the half-room) for free; beyond it each
+# further fraction costs BALANCE_W of the 0..1 layout score. Only used to rank complete layouts.
+BALANCE_W = 0.15
+BALANCE_FREE = 0.12
+
 
 @dataclass
 class Budget:
@@ -445,12 +451,31 @@ class Solver:
             per_item[item.id] = num / den if den else 1.0
             detail[item.id] = (sat, vio)
         score = sum(per_item.values()) / max(1, len(per_item))
-        return {"score": score, "detail": detail}
+        off = self.balance_offset(rects)
+        return {"score": score, "detail": detail, "balance_offset": off,
+                "balance_penalty": BALANCE_W * max(0.0, off - BALANCE_FREE)}
+
+    def balance_offset(self, rects: Dict[str, Rect]) -> float:
+        """How far the furniture's visual mass sits from the room centre: 0 = centred, 1 = against a wall (per axis, combined)."""
+        minx, minz, maxx, maxz = self.ctx.bbox
+        hx, hz = max(1.0, (maxx - minx) / 2.0), max(1.0, (maxz - minz) / 2.0)
+        m = sx = sz = 0.0
+        for iid, r in rects.items():
+            it = self.by_id.get(iid)
+            if it is None or it.flat:
+                continue
+            w = r.w * r.d * min(max(it.h, 30.0), 200.0)
+            m += w
+            sx += w * r.x
+            sz += w * r.z
+        if m <= 0:
+            return 0.0
+        return math.hypot((sx / m - (minx + hx)) / hx, (sz / m - (minz + hz)) / hz)
 
     def leaf(self, state: State) -> None:
         self.leaves += 1
         ev = self.evaluate(state.rects)
-        score = ev["score"] - (0.05 if not state.ok75 else 0.0)
+        score = ev["score"] - (0.05 if not state.ok75 else 0.0) - ev["balance_penalty"]
         key = (len(state.rects), round(score, 6))
         if self.best is None or key > self.best[0]:
             # the path cache is a shortcut; confirm the winner with a full walkway check
@@ -590,7 +615,7 @@ class Solver:
         if warns:
             layout["warnings"] = warns
         stats = {"runtime_s": round(time.perf_counter() - self.t0, 3), "expansions": self.expansions, "leaves": self.leaves,
-                 "walkway_75cm_ok": bool(state.ok75)}
+                 "walkway_75cm_ok": bool(state.ok75), "balance_offset": round(ev.get("balance_offset", 0.0), 3)}
         return SolveResult(layout, stats)
 
 

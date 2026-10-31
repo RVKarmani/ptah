@@ -107,6 +107,7 @@ export function defaultView(scene: Scene, itemsById: Map<string, Item>, aspect: 
     const tpl = templateOf(it)
     if (/rug|carpet/.test(tpl) || p.mount === 'on_top_of' || p.mount === 'ceiling' || p.mount === 'attach' || tpl === 'pendant') continue
     if (it.h <= 3) continue
+    if (!DIRECTIONAL.has(tpl)) continue // plants, lamps and tables look the same from every side: they should not decide the angle
     ks.push({ x: p.x, z: p.z, f: facing(p.rotation_deg ?? 0), w: Math.sqrt(it.w * it.h) * (it.focal || it.owned ? 1.5 : 1), key: false, seat: /^(sofa|armchair|chair)$/.test(tpl) })
   }
   const maxW = Math.max(1, ...ks.map((k) => k.w))
