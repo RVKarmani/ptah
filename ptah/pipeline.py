@@ -249,7 +249,7 @@ def _run_rlm(ctx: Ctx) -> dict:
     """The slow part: the DSPy RLM reads the posts (progress from its iterations, LLM + Qloo activity from hooks)."""
     from . import data, profile_check, qloo, taste
     events.install_dspy_callback()
-    ctx.sink.llm_label = "Claude is reading your posts"
+    ctx.sink.llm_label = "AI is reading your posts"
     cap = int(os.environ.get("PTAH_QLOO_CAP_TASTE", qloo.DEFAULT_CALL_CAP))
     try:
         with data.use_data_dir(ctx.ingest_dir):

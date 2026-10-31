@@ -12,7 +12,7 @@ export interface MockSource { url: string; speed: number }
 /**
  * Follow one job: EventSource (auto-reconnects with Last-Event-ID) with a polling fallback.
  * Events are buffered and applied in batches, so a burst of 100 events costs one render.
- * `mock` (development builds only) replays a recorded stream client-side, for screenshots.
+ * `mock` (development and static-demo builds only) replays a recorded stream client-side, for screenshots.
  */
 export function useJobStream(jobId: string | null, mock: MockSource | null): { view: JobView; connection: Connection; resume: () => Promise<void>; resuming: boolean; resumeError: string | null } {
   const [view, setView] = useState<JobView>(initialView)
@@ -55,8 +55,8 @@ export function useJobStream(jobId: string | null, mock: MockSource | null): { v
     }
     const closeStream = () => { es?.close(); es = null; if (pollT) { window.clearTimeout(pollT); pollT = 0 } }
 
-    // ---- development-only replay of a recorded stream (never in production builds)
-    if (import.meta.env.DEV && mock) {
+    // ---- replay of a recorded stream (development and the static demo; `mock` is null in every other build)
+    if (mock) {
       let cancelled = false
       fetch(mock.url).then((r) => r.json()).then((raw: PtahEvent[] | { events: PtahEvent[]; resume?: PtahEvent[] }) => {
         if (cancelled) return
@@ -135,7 +135,7 @@ export function useJobStream(jobId: string | null, mock: MockSource | null): { v
     if (!jobId) return
     setResuming(true); setResumeError(null)
     try {
-      if (!(import.meta.env.DEV && mock)) await resumeJob(jobId)
+      if (!mock) await resumeJob(jobId)
       setConnection('connecting')
       setEpoch((e) => e + 1)
     } catch (e) {

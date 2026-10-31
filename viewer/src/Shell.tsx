@@ -4,6 +4,7 @@ import Welcome from './onboarding/Welcome'
 import { apiBase, deleteJob, startDemo, viewerBase } from './onboarding/api'
 import { loadFlow, loadProgress, loadViewer } from './onboarding/loaders'
 import { forgetJob, rememberJob } from './onboarding/session'
+import { PAGES } from './pages'
 import './onboarding/onboarding.css'
 
 // The form and progress screens are small chunks; the 3D viewer (three.js) is the heavy one and is fetched in the background.
@@ -39,7 +40,7 @@ function urlFor(r: Route, data?: string): string {
   if (api) keep.set('api', api)
   if (r.name === 'taste' || r.name === 'room') keep.set('step', r.name)
   if (r.name === 'job') keep.set('job', r.id)
-  if (r.name === 'view' && data) keep.set('data', data)
+  if (r.name === 'view') keep.set(data ? 'data' : 'sample', data || '1') // no data prefix = the bundled sample room
   const s = keep.toString()
   return window.location.pathname + (s ? '?' + s : '')
 }
@@ -98,16 +99,16 @@ export default function Shell() {
     const t = window.setTimeout(() => {
       setHandoff(null)
       rememberJob(finish.jobId, true)
-      go({ name: 'view' }, { replace: true, data: finish.data })
+      go({ name: 'view' }, { replace: true, data: finish.data || undefined })
     }, 650)
     return () => window.clearTimeout(t)
   }, [finish, go])
 
   const viewData = route.name === 'view' ? new URLSearchParams(window.location.search).get('data') : null
   const viewJobId = viewData?.match(/\/api\/jobs\/([A-Za-z0-9_-]+)\/viewer\/?/)?.[1] ?? null
-  const viewerBaseUrl = handoff ? handoff.data : route.name === 'view' ? viewData ?? undefined : undefined
+  const viewerBaseUrl = handoff ? handoff.data || undefined : route.name === 'view' ? viewData ?? undefined : undefined
   const showViewer = !!handoff || route.name === 'view'
-  const viewerJob = handoff?.jobId ?? viewJobId
+  const viewerJob = PAGES ? null : handoff?.jobId ?? viewJobId
 
   return (
     <>
@@ -124,7 +125,7 @@ export default function Shell() {
             jobId={route.id}
             leaving={!!handoff}
             fade={!!handoff?.ready}
-            onResult={(id) => setHandoff({ jobId: id, data: mockData ? new URL(mockData, document.baseURI).href : viewerBase(id), ready: false })}
+            onResult={(id) => setHandoff((h) => h ?? { jobId: id, data: PAGES ? '' : mockData ? new URL(mockData, document.baseURI).href : viewerBase(id), ready: false })}
             onStartOver={startOver}
             onDelete={() => deleteAndExit(route.id)}
           />

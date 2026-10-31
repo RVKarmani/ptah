@@ -5,6 +5,7 @@ import { ApiError, createJob, getHealth, getRooms, type Health, type SampleRoom 
 import { emptyForm, type FormState } from './formTypes'
 import { OwnedCard, PrefsCard, RoomCard } from './RoomStep'
 import { InstagramCard, LovesCard } from './TastePicker'
+import { PAGES, PAGES_ROOMS, REPO_URL } from '../pages'
 
 type Step = 'taste' | 'room'
 type Problem = { step: Step; where: 'zip' | 'room' | 'general'; title: string; text: string }
@@ -30,6 +31,7 @@ export default function Flow({ step, onStep, onHome, onStarted }: { step: Step; 
   const [roomsError, setRoomsError] = useState(false)
   const [uploading, setUploading] = useState<number | null>(null)
   const [problem, setProblem] = useState<Problem | null>(null)
+  const [staticNote, setStaticNote] = useState(false)
   const abort = useRef<(() => void) | null>(null)
   const headRef = useRef<HTMLHeadingElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -37,6 +39,13 @@ export default function Flow({ step, onStep, onHome, onStarted }: { step: Step; 
 
   useEffect(() => {
     const ac = new AbortController()
+    if (PAGES) {
+      // static demo: no server to ask; the only room is the bundled sample
+      setHealth({ ok: true, qloo: false, llm: false, demo: true, max_upload_mb: 300 })
+      setRooms(PAGES_ROOMS)
+      setForm((f) => (f.room ? f : { ...f, room: 'sample:' + PAGES_ROOMS[0].id }))
+      return () => { abort.current?.() }
+    }
     getHealth(ac.signal).then(setHealth).catch(() => setHealth(null))
     getRooms(ac.signal).then((r) => {
       setRooms(r)
@@ -58,6 +67,7 @@ export default function Flow({ step, onStep, onHome, onStarted }: { step: Step; 
   const submit = async () => {
     if (busy) return
     setProblem(null)
+    if (PAGES) { setStaticNote(true); return }
     const fd = new FormData()
     if (form.zip) fd.append('instagram', form.zip, form.zip.name)
     if (form.loves.length) fd.append('loves', JSON.stringify(form.loves.map(({ name, type, qloo_id }) => ({ name, ...(type ? { type } : {}), ...(qloo_id ? { qloo_id } : {}) }))))
@@ -148,6 +158,16 @@ export default function Flow({ step, onStep, onHome, onStarted }: { step: Step; 
 
       <div className="flow-scroll" ref={scrollRef}>
         <div className="ob-main">
+          {staticNote && (
+            <div className="banner" role="status">
+              <Icon name="alert" size={18} />
+              <div>
+                <b>Live design runs on the full app</b>
+                <p>This hosted demo has no server, so it cannot read your taste or design a new room. Run Ptah locally to try it with your own data: see the <a href={REPO_URL} target="_blank" rel="noreferrer">README</a>. To see a finished result here, go back and choose "Try with a sample person".</p>
+                <p><button type="button" className="btn sm" onClick={onHome}>Back to the start</button></p>
+              </div>
+            </div>
+          )}
           {problem && problem.where === 'general' && (
             <div className="banner bad" role="alert"><Icon name="alert" size={18} /><div><b>{problem.title}</b><p>{problem.text}</p></div></div>
           )}

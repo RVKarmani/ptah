@@ -3,6 +3,9 @@
 
 The recording comes from a real person's run, so labels that could name their taste are replaced with generic text and
 details are dropped: the output is safe to commit. Run:  python3 scripts/make-mock-events.py  (writes dev-fixtures/*.json)
+
+Static demo (GitHub Pages): `python3 scripts/make-mock-events.py --demo` rebuilds public/demo/events.json from the committed, already
+sanitised dev-fixtures/mock-events.json (no private data needed), retimed to DEMO_SECONDS and with the post count replaced by a made-up figure.
 """
 import json, re, sys
 from pathlib import Path
@@ -15,6 +18,8 @@ WEIGHTS = [("ingest", "Reading your posts", 5), ("taste", "Understanding your ta
 SHOP = ["sage green armchair", "oak coffee table", "linen floor lamp", "wool area rug", "walnut media console", "framed botanical print", "ceramic table lamp", "brass wall sconce"]
 TOTAL = sum(w for _, _, w in WEIGHTS)
 SCALE = 60.0  # seconds for the whole recording
+DEMO_SECONDS = 35.0  # the bundled sample-person replay on the static demo
+DEMO_POSTS = 240  # made-up: the sample person is not a real account
 
 
 def clean(e, shop_i):
@@ -84,5 +89,20 @@ def main():
     print("wrote", len(evs), "events;", len(part) + 1, "before the error;", len(resume + tail), "after resume")
 
 
+def demo():
+    evs = json.loads((OUT / "mock-events.json").read_text())
+    k = DEMO_SECONDS / max(e["t"] for e in evs)
+    for e in evs:
+        e["t"] = round(e["t"] * k, 2)
+        if e.get("duration_ms"):
+            e["duration_ms"] = int(e["duration_ms"] * k)
+        if e["type"] == "stage_end" and "posts" in (e.get("detail") or {}):
+            e["detail"]["posts"] = DEMO_POSTS
+    dest = OUT.parent / "public" / "demo"
+    dest.mkdir(parents=True, exist_ok=True)
+    (dest / "events.json").write_text(json.dumps(evs, separators=(",", ":")))
+    print("wrote", dest / "events.json", len(evs), "events,", DEMO_SECONDS, "s")
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(demo() if "--demo" in sys.argv[1:] else main())

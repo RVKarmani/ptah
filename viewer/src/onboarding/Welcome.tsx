@@ -5,6 +5,7 @@ import { recallJob } from './session'
 import { Icon } from '../ui'
 import { Cell, Dim, Sheet, TbMark, ThemeCell } from '../sheet/Sheet'
 import { DataNote } from './DataNote'
+import { PAGES, REPO_URL } from '../pages'
 
 const demoSeconds = (() => { const n = parseFloat(new URLSearchParams(window.location.search).get('demo_seconds') ?? ''); return Number.isFinite(n) && n > 0 ? n : undefined })()
 const PLATE = `${import.meta.env.BASE_URL}brand/room-plate.png`
@@ -18,7 +19,7 @@ export default function Welcome({ notice, onStart, onDemo, offlineApi }: { notic
 
   useEffect(() => {
     const ac = new AbortController()
-    getHealth(ac.signal).then(setHealth).catch((e) => { if (e?.name !== 'AbortError') setHealth('down') })
+    if (!PAGES) getHealth(ac.signal).then(setHealth).catch((e) => { if (e?.name !== 'AbortError') setHealth('down') })
     // after the first paint: fetch the form + progress screens, then (when idle) the 3D viewer
     let idle = 0
     const t = window.setTimeout(() => {
@@ -52,6 +53,12 @@ export default function Welcome({ notice, onStart, onDemo, offlineApi }: { notic
       <div className="copy">
         <h1 className="t-display">Your taste, drawn to scale.</h1>
         <p className="lead">Give Ptah your Instagram export and a few things you love. It asks Qloo what people like you live with, then furnishes your room with real pieces you can buy.</p>
+        {PAGES && (
+          <p className="ob-note ok" role="note">
+            <Icon name="alert" size={16} />
+            <span><b>Static demo.</b> No server runs here, so nothing is uploaded. "Try with a sample person" replays a recorded run for a made-up person and opens a sample room. Live design runs in the <a href={REPO_URL} target="_blank" rel="noreferrer">full app</a>.</span>
+          </p>
+        )}
         {notice && <p className="ob-note ok" role="status"><Icon name="check" size={16} /> {notice}</p>}
         {down && (
           <p className="ob-note warn" role="alert">

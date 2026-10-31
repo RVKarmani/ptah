@@ -2,15 +2,18 @@ import { useEffect, useRef, useState } from 'react'
 import { Cell, Sheet, TbMark, ThemeCell } from '../sheet/Sheet'
 import { Icon, type IconName } from '../ui'
 import { getJob } from './api'
+import { PAGES } from '../pages'
 import { type JobError, type JobView, type LogLine, type Service, type StageView } from './jobEvents'
 import { useJobStream, type MockSource } from './useJobStream'
 
-/* development-only replay of a recorded stream: ?mockEvents=<url>&mockSpeed=4 (production builds never read it) */
+/* replay of a recorded stream: ?mockEvents=<url>&mockSpeed=4 in development; the static demo (pages mode) always replays its bundled recording. Other production builds never read it. */
 const MOCK: MockSource | null = (() => {
-  if (!import.meta.env.DEV) return null
+  if (!import.meta.env.DEV && !PAGES) return null
   const q = new URLSearchParams(window.location.search)
+  const speed = Math.max(0.1, parseFloat(q.get('mockSpeed') ?? '1') || 1)
+  if (PAGES) return { url: `${import.meta.env.BASE_URL}demo/events.json`, speed }
   const url = q.get('mockEvents')
-  return url ? { url, speed: Math.max(0.1, parseFloat(q.get('mockSpeed') ?? '1') || 1) } : null
+  return url ? { url, speed } : null
 })()
 
 const SERVICE_INFO: Record<Exclude<Service, 'compute'>, { name: string; icon: IconName; tip: string; idle: string }> = {
@@ -246,7 +249,12 @@ export default function Progress({ jobId, leaving, fade, onResult, onStartOver, 
       <Cell label="Drawing set" className="hide-s">Your room</Cell>
       <Cell label="Sheet" className="num grow-s">{done ? '07 of 07' : `${String(stageIdx + 1).padStart(2, '0')} of ${String(Math.max(view.stages.length, 7)).padStart(2, '0')}`}</Cell>
       <Cell label="Status" fill className="hide-s">{failed ? 'Stopped, finished sheets are kept' : done ? 'Issued, opening the 3D room' : 'In progress, issued sheets are final'}</Cell>
-      {!leaving && (
+      {!leaving && PAGES && (
+        <div className="tb-act">
+          <button type="button" className="btn" onClick={() => onResult(jobId)}>Skip to room</button>
+        </div>
+      )}
+      {!leaving && !PAGES && (
         <div className="tb-act">
           <ConfirmButton
             label={running ? 'Cancel and delete my data' : 'Delete my data'} confirm="Yes, delete everything" busy={deleting}

@@ -30,6 +30,8 @@ export class ApiError extends Error {
   }
 }
 
+import { PAGES } from '../pages'
+
 let base: string | null = null
 export function apiBase(): string {
   if (base !== null) return base
@@ -55,6 +57,7 @@ async function parseError(r: Response): Promise<ApiError> {
 }
 
 export async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
+  if (PAGES) throw new ApiError(0, 'offline', 'This static demo has no server.')
   let r: Response
   try { r = await fetch(apiUrl(path), { signal, headers: { Accept: 'application/json' } }) } catch (e) {
     if ((e as Error)?.name === 'AbortError') throw e
@@ -65,6 +68,7 @@ export async function getJson<T>(path: string, signal?: AbortSignal): Promise<T>
 }
 
 export async function sendJson<T>(method: 'POST' | 'DELETE', path: string): Promise<T> {
+  if (PAGES) throw new ApiError(0, 'offline', 'This static demo has no server.')
   let r: Response
   try { r = await fetch(apiUrl(path), { method, headers: { Accept: 'application/json' } }) } catch {
     throw new ApiError(0, 'offline', 'Ptah could not reach its server.')
@@ -76,7 +80,8 @@ export async function sendJson<T>(method: 'POST' | 'DELETE', path: string): Prom
 export const getHealth = (signal?: AbortSignal) => getJson<Health>('/api/health', signal)
 export const getRooms = (signal?: AbortSignal) => getJson<SampleRoom[]>('/api/rooms', signal)
 export const searchQloo = (q: string, signal?: AbortSignal) => getJson<QlooHit[]>(`/api/qloo/search?q=${encodeURIComponent(q)}&take=6`, signal)
-export const startDemo = (seconds?: number) => sendJson<JobCreated>('POST', '/api/demo' + (seconds ? `?seconds=${seconds}` : ''))
+export const startDemo = (seconds?: number): Promise<JobCreated> =>
+  PAGES ? Promise.resolve({ job_id: 'demo', events_url: '', viewer_url: '' }) : sendJson<JobCreated>('POST', '/api/demo' + (seconds ? `?seconds=${seconds}` : ''))
 export const getJob = (id: string, signal?: AbortSignal) => getJson<JobStatus>(`/api/jobs/${id}`, signal)
 export const resumeJob = (id: string) => sendJson<{ job_id: string }>('POST', `/api/jobs/${id}/resume`)
 export const deleteJob = (id: string) => sendJson<{ job_id: string; status: string }>('DELETE', `/api/jobs/${id}`)
@@ -84,6 +89,7 @@ export const deleteJob = (id: string) => sendJson<{ job_id: string; status: stri
 /** POST /api/jobs with upload progress (fetch cannot report it). `abort()` cancels the upload. */
 export function createJob(form: FormData, onProgress: (frac: number) => void): { promise: Promise<JobCreated>; abort: () => void } {
   const xhr = new XMLHttpRequest()
+  if (PAGES) return { promise: Promise.reject(new ApiError(0, 'offline', 'This static demo has no server.')), abort: () => {} }
   const promise = new Promise<JobCreated>((resolve, reject) => {
     xhr.open('POST', apiUrl('/api/jobs'))
     xhr.responseType = 'json'

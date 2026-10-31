@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState, type DragEvent, type KeyboardEvent 
 import { Icon, type IconName } from '../ui'
 import { ApiError, searchQloo, type Health, type QlooHit } from './api'
 import { fmtBytes, MAX_LOVES, type FormState } from './formTypes'
+import { PAGES } from '../pages'
 
 const TYPE_ICON: Record<string, IconName> = {
   artist: 'music', movie: 'film', tv_show: 'tv', book: 'book', brand: 'tag', place: 'pin', destination: 'globe', designer: 'brush',
@@ -163,7 +164,7 @@ export function LovesCard({ loves, onChange, health }: { loves: FormState['loves
             {busy && opts.length <= 1 && <li className="opt-note" role="presentation">Searching Qloo</li>}
           </ul>
         )}
-        {(noQloo || offline) && <p className="muted soft">{offline ?? 'Suggestions are not available on this server. Type a name and press Enter to add it.'}</p>}
+        {(noQloo || offline) && <p className="muted soft">{offline ?? (PAGES ? 'Qloo suggestions run on the full app: this static demo has no server (and no API keys). Type a name and press Enter to add it.' : 'Suggestions are not available on this server. Type a name and press Enter to add it.')}</p>}
       </div>
       <div className="sr" aria-live="polite" role="status">{said}</div>
       {loves.length > 0 ? (
