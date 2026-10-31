@@ -38,7 +38,7 @@ Every recommendation keeps its chain back to the Qloo signal it came from, so th
 
 **https://rvkarmani.github.io/ptah/**
 
-The hosted demo is a static build with no server and no API keys. Choose **Try with a sample person**: it replays a recorded run for a made-up person and opens the finished 3D room, which you can fully explore (orbit, lighting scenes, items, floor and wall finishes). Designing from your own data needs the full app with keys, below.
+The hosted demo is a static build with no server and no API keys. Choose **Try with a sample person**: it replays a recorded run and opens a room Ptah designed for a real person (their Instagram data and personal details removed). Explore it fully: orbit, switch lighting scenes, open any piece for its real store link, "why this fits" chain and alternatives, and change the floor and walls. Designing from your own data needs the full app with keys, below.
 
 ## Run it yourself
 

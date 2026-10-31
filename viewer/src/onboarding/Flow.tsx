@@ -163,7 +163,7 @@ export default function Flow({ step, onStep, onHome, onStarted }: { step: Step; 
               <Icon name="alert" size={18} />
               <div>
                 <b>Live design runs on the full app</b>
-                <p>This hosted demo has no server, so it cannot read your taste or design a new room. Run Ptah locally to try it with your own data: see the <a href={REPO_URL} target="_blank" rel="noreferrer">README</a>. To see a finished result here, go back and choose "Try with a sample person".</p>
+                <p>This hosted demo has no server, so it cannot read your taste or design a new room. Run Ptah locally to try it with your own data: see the <a href={REPO_URL} target="_blank" rel="noreferrer">README</a>. To see a finished room here, go back and choose "Try with a sample person".</p>
                 <p><button type="button" className="btn sm" onClick={onHome}>Back to the start</button></p>
               </div>
             </div>

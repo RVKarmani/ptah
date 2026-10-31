@@ -1,13 +1,14 @@
 import type { Item, Layout, Lighting, Room, Scene, Taste } from './types'
+import { PAGES } from './pages'
 
-/** Resolve the data base path: ?data=<prefix> or the bundled /sample/ folder. Always ends with '/'. */
+/** Resolve the data base path: ?data=<prefix> or the bundled /sample/ folder (/demo/room/ in the static demo). Always ends with '/'. */
 let override: string | null = null
 /** The onboarding flow hands a finished job's bundle to the viewer without a page load; the viewer calls this once on mount. */
 export function setDataBase(url: string | null | undefined): void { override = url && url.trim() ? url.trim() : null }
 
 export function dataBase(): string {
   const q = override ?? new URLSearchParams(window.location.search).get('data')
-  let base = q && q.trim() ? q.trim() : import.meta.env.BASE_URL + 'sample/'
+  let base = q && q.trim() ? q.trim() : import.meta.env.BASE_URL + (PAGES ? 'demo/room/' : 'sample/') // static demo: a real result with personal data removed
   if (!base.endsWith('/')) base += '/'
   return new URL(base, document.baseURI).href
 }

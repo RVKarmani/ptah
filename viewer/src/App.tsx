@@ -15,6 +15,7 @@ import { Icon } from './ui'
 import { Logo } from './brand/Logo'
 import { AppMenu } from './onboarding/AppMenu'
 import { enableSnapshots } from './snapshot'
+import { PAGES } from './pages'
 import {
   DEFAULT_SCENE, SCENE_LAYERS, SCENE_TIME, SCENES, effectiveStates, initialStates, lightSpecs, lightingFor, sceneKey,
   type LayerState, type LayerStates, type LightState, type LightStates, type SceneName,
@@ -220,7 +221,7 @@ export default function App({ base, onExit, onDelete, onReady }: AppProps = {}) 
       {typeof layout.score === 'number' && (
         <div className="tb-cell hide-s" title="How well this layout fits your room and taste"><small>Fit to your taste</small><b className="num rub">{Math.round(layout.score * 100)}</b></div>
       )}
-      <Cell label="Data" fill className="hide-s hide-m">{isSample ? 'Sample data' : 'Your design'}</Cell>
+      <Cell label="Data" fill className="hide-s hide-m">{PAGES ? 'Example result' : isSample ? 'Sample data' : 'Your design'}</Cell>
       <div className="tb-act">
         <button className="tb-link" onClick={() => { setSelectedId(null); setResetKey((k) => k + 1) }} title="Back to the overview" aria-label="Reset view">
           <Icon name="reset" size={18} /> <span>Reset view</span>

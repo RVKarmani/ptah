@@ -56,7 +56,7 @@ export default function Welcome({ notice, onStart, onDemo, offlineApi }: { notic
         {PAGES && (
           <p className="ob-note ok" role="note">
             <Icon name="alert" size={16} />
-            <span><b>Static demo.</b> No server runs here, so nothing is uploaded. "Try with a sample person" replays a recorded run for a made-up person and opens a sample room. Live design runs in the <a href={REPO_URL} target="_blank" rel="noreferrer">full app</a>.</span>
+            <span><b>Static demo.</b> No server runs here, so nothing is uploaded. "Try with a sample person" replays a recorded run and opens a room Ptah designed for a real person, with their personal data removed. Live design runs in the <a href={REPO_URL} target="_blank" rel="noreferrer">full app</a>.</span>
           </p>
         )}
         {notice && <p className="ob-note ok" role="status"><Icon name="check" size={16} /> {notice}</p>}
