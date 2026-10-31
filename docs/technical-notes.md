@@ -112,6 +112,6 @@ React, three.js and react-three-fiber. Every item is a procedural low-poly model
 
 - **Data:** `?data=<url prefix>` loads a bundle (`room.json`, `items.json`, `layout.json`, optional `lighting.json` and `taste.json`); default is the bundled sample (the demo room in the Pages build).
 - **URL parameters:** `scene=day|evening|reading|night|all_off`, `time=21.5`, `floor=<preset>`, `tab=lighting|room`, `select=<item id>`, `cam=x,y,z,tx,ty,tz`, and `ao=0`, `bloom=0`, `tone=aces` for slow machines.
-- **Dev-only replay:** `?mockEvents=/dev-fixtures/mock-events.json&mockSpeed=4&mockData=/sample/` replays a recorded progress stream (fixtures: `python3 scripts/make-mock-events.py`).
-- **Floor textures** are procedural; real CC0 maps can be dropped into `public/textures/<preset>/` (`npm run fetch-textures`) and enabled with `?textures=1`.
+- **Dev-only replay:** `?mockEvents=/demo/events.json&mockData=/demo/room/&mockSpeed=4` replays the demo's progress stream without a backend. `python3 scripts/make-mock-events.py` rebuilds that file from a recorded run, with personal labels removed.
+- **Floor textures** are procedural; to use real PBR maps put `diffuse.jpg`, `normal.jpg` and `roughness.jpg` in `public/textures/<preset>/` and add `?textures=1`.
 - **Design tokens** (colour, type, spacing) live in `src/tokens.css` and `src/tokens.ts`.
