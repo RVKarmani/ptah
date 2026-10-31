@@ -1,0 +1,98 @@
+/* ------------------------------------------------------------------------------------------------
+   Ostracon: Ptah as a drawing set. One source of truth for every colour, size, rule and motion value.
+   TypeScript mirror (for the 3D scene): src/tokens.ts. Keep the two in step.
+
+   Colour has one job each. Carbon is all linework and text. Rubric red is a rubric: it marks only what is
+   live or chosen (the active stage, the selected piece, a running service). Never decoration.
+   ------------------------------------------------------------------------------------------------ */
+
+/* Fonts are self-hosted (public/fonts, SIL OFL; licence files sit next to them). Latin subset. */
+@font-face { font-family: 'Newsreader'; font-style: normal; font-weight: 380 600; font-display: swap; src: url('/fonts/newsreader-var.woff2') format('woff2'); }
+@font-face { font-family: 'Newsreader'; font-style: italic; font-weight: 400; font-display: swap; src: url('/fonts/newsreader-italic-400.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Semi Condensed'; font-style: normal; font-weight: 400; font-display: swap; src: url('/fonts/barlow-semi-condensed-400.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Semi Condensed'; font-style: normal; font-weight: 500; font-display: swap; src: url('/fonts/barlow-semi-condensed-500.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Semi Condensed'; font-style: normal; font-weight: 600; font-display: swap; src: url('/fonts/barlow-semi-condensed-600.woff2') format('woff2'); }
+
+:root {
+  color-scheme: light;
+
+  /* ---- colour: day sheet (limestone and carbon ink) ---- */
+  --stone: #d5d3ca;            /* the table outside the sheet */
+  --paper: #e6e4dc;            /* the sheet */
+  --chalk: #f1efe8;            /* photo wells, the active tab */
+  --well: #ccc9be;             /* recessed areas */
+  --carbon: #1b1a18;           /* every line, all text, the primary button */
+  --graphite: #5b5953;         /* secondary text */
+  --pencil: #8c8a82;           /* pending and proposed linework (never small text) */
+  --rubric: #b1232b;           /* the only accent: lines, fills and large type */
+  --rubric-ink: #a01e27;       /* the same red where it must read as small text (4.6:1 on every ground) */
+  --rubric-wash: rgba(177, 35, 43, .09);   /* the selected row */
+  --grid: rgba(177, 35, 43, .11);          /* canon grid: one module */
+  --grid-major: rgba(177, 35, 43, .26);    /* every sixth line */
+  --rule-soft: rgba(27, 26, 24, .30);      /* thin dividers between rows */
+  --on-carbon: var(--paper);               /* text on a carbon fill */
+  --on-rubric: #ffffff;
+  --scrim: rgba(27, 26, 24, .45);
+  --photo-mat: #ffffff;                    /* the white mat behind a product photo (photos are shot on white) */
+
+  /* ---- type ---- */
+  --serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --sans: 'Barlow Semi Condensed', 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
+  --fs-cap: 12.5px;   /* captions, column heads, title block labels */
+  --fs-sm: 14px;      /* annotation */
+  --fs-md: 17px;      /* body */
+  --fs-lg: 20px;      /* lead, row names */
+  --fs-xl: 28px;      /* panel heads */
+  --fs-2xl: 44px;     /* the one big figure */
+  --fs-3xl: 64px;     /* screen headline */
+  --fs-display: 114px;/* the welcome headline, used once */
+  --ls-sans: .02em;
+  --ls-display: -.025em;
+
+  /* ---- space: one module is 24px (the canon grid). Component padding is 8 / 16 / 24 ---- */
+  --u: 24px;
+  --s0: 4px; --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s5: 48px; --s6: 72px;
+  --tb-h: 56px;       /* title block */
+  --panel-w: 474px;
+
+  /* ---- rules, corners, depth ---- */
+  --rule-1: 1px;      /* dividers */
+  --rule-2: 1.5px;    /* control borders */
+  --rule-3: 2px;      /* the sheet frame and the title block */
+  --r: 0;             /* nothing is rounded; only numbered balloons are circles */
+  --focus: 2px solid var(--rubric);
+  --focus-offset: 3px;
+
+  /* ---- motion: things are plotted, not faded. One easing, two durations ---- */
+  --ease: cubic-bezier(.6, 0, .2, 1);
+  --dur: 140ms;
+  --dur-plot: 1.6s;
+
+  /* ---- layers ---- */
+  --z-stage: 1; --z-panel: 4; --z-tag: 20; --z-menu: 30; --z-modal: 40; --z-load: 50;
+}
+
+/* ---- colour: night sheet (the same drawing, inverted) ---- */
+[data-theme='night'] {
+  color-scheme: dark;
+  --stone: #101112;
+  --paper: #1a1b1d;
+  --chalk: #232426;
+  --well: #141516;
+  --carbon: #dcdad1;
+  --graphite: #a3a199;
+  --pencil: #6f6d67;
+  --rubric: #e5594f;
+  --rubric-ink: #f07468;
+  --rubric-wash: rgba(229, 89, 79, .12);
+  --grid: rgba(229, 89, 79, .14);
+  --grid-major: rgba(229, 89, 79, .30);
+  --rule-soft: rgba(220, 218, 209, .28);
+  --on-carbon: #1a1b1d;
+  --on-rubric: #1a1b1d;
+  --scrim: rgba(0, 0, 0, .6);
+}
+
+@media (max-width: 820px) {
+  :root { --fs-display: 60px; --fs-3xl: 40px; --fs-2xl: 36px; --fs-xl: 24px; --tb-h: 52px; }
+}

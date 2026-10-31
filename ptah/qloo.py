@@ -41,6 +41,8 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Callable
 
+from . import events
+
 log = logging.getLogger("ptah.qloo")
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -204,7 +206,8 @@ def get(path: str, params: dict[str, Any]) -> dict:
         log.debug("GET %s?%s (attempt %d)", path, urllib.parse.urlencode(params), attempt + 1)
         _throttle()
         try:
-            status, body, headers = _http_get(url, key)
+            with events.activity("qloo", events.qloo_label(path, params), {"attempt": attempt + 1}):   # no-op without a job sink
+                status, body, headers = _http_get(url, key)
         except (urllib.error.URLError, TimeoutError, OSError) as e:
             status, body, headers = 0, "", {}
             last = f"network error: {type(e).__name__}"

@@ -1,0 +1,26 @@
+/* Real options in the item card: schedule-like rows, thin rules, no pills. Tokens only (tokens.css). */
+.nm { gap: 6px; }
+.nm-h { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 6px; border-bottom: var(--rule-2) solid var(--carbon); }
+.nm-lead { font: 500 var(--fs-sm)/1.35 var(--sans); color: var(--graphite); letter-spacing: var(--ls-sans); margin: 0; }
+.nm-list { list-style: none; margin: 4px 0 0; padding: 0; }
+.nm-row { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; padding: 12px 0 12px 10px; border-top: 1px solid var(--rule-soft); position: relative; }
+.nm-row:first-child { border-top: 0; }
+.nm-row.on { box-shadow: inset 2px 0 0 var(--rubric); }
+.nm-ph { width: 64px; height: 64px; border: 1px solid var(--carbon); background: var(--photo-mat); display: grid; place-items: center; overflow: hidden; color: var(--carbon); }
+.nm-ph img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.nm-body { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.nm-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.nm-title { font: 500 var(--fs-md)/1.15 var(--serif); letter-spacing: -.005em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.nm-row.on .nm-title { font-weight: 600; }
+.nm-price { font-size: var(--fs-sm); color: var(--carbon); white-space: nowrap; }
+.nm-store { font: 500 var(--fs-cap)/1.2 var(--sans); color: var(--graphite); letter-spacing: var(--ls-sans); }
+.nm-row.on .nm-store { color: var(--rubric-ink); }
+.nm-miss { margin: 2px 0 0; font: 500 var(--fs-sm)/1.35 var(--sans); color: var(--carbon); letter-spacing: var(--ls-sans); }
+.nm-miss .icon { flex: none; }
+.nm-miss.ok { display: flex; align-items: center; gap: 6px; }
+.nm-k { font-weight: 600; letter-spacing: .04em; text-transform: none; }
+.nm-act { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 6px; }
+.nm-act .btn { margin-top: 0; }
+.nm-link { display: inline-flex; align-items: center; gap: 5px; font: 500 var(--fs-sm)/1.2 var(--sans); color: var(--carbon); letter-spacing: var(--ls-sans); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.nm-link:hover { text-decoration-thickness: 2px; }
+@media (max-width: 720px) { .nm-row { grid-template-columns: 52px minmax(0, 1fr); gap: 10px; padding-left: 6px; } .nm-ph { width: 52px; height: 52px; } }

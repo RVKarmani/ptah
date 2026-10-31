@@ -1,15 +1,14 @@
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, type MutableRefObject } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { Html } from '@react-three/drei'
 import * as THREE from 'three'
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js'
 import type { Item, Placement } from './types'
 import { buildModel, type Built, type ShelfBlock } from './models'
-import { ACCENT, categoryColor } from './palette'
+import { categoryColor } from './palette'
 import { baseIntensity, dimCurve, type LightSpec, type LightState } from './lights'
 import { kelvinTint, lightColorFrom } from './color'
 
-export { ACCENT, categoryColor }
+export { categoryColor }
 
 RectAreaLightUniformsLib.init()
 
@@ -20,8 +19,6 @@ interface Props {
   item: Item
   placement: Placement
   index: number
-  hovered: boolean
-  selected: boolean
   roomHeight: number
   spec: LightSpec | null
   state: LightState | null
@@ -107,7 +104,7 @@ function ItemLight({ spec, state, shadow }: { spec: LightSpec; state: LightState
   )
 }
 
-function PlacedItemImpl({ item, placement, index, hovered, selected, roomHeight, spec, state, shadow, shelfBlocks, parentItem, registry, onHover, onSelect }: Props) {
+function PlacedItemImpl({ item, placement, index, roomHeight, spec, state, shadow, shelfBlocks, parentItem, registry, onHover, onSelect }: Props) {
   const y = placement.y ?? placement.elevation ?? 0
   const built = useMemo<Built>(() => buildModel(item, { ceilingGap: roomHeight - (y + item.h), shelfBlocks, parent: parentItem }), [item, roomHeight, y, shelfBlocks, parentItem])
   const group = useRef<THREE.Group>(null)
@@ -151,7 +148,6 @@ function PlacedItemImpl({ item, placement, index, hovered, selected, roomHeight,
   })
 
   const rot = THREE.MathUtils.degToRad(placement.rotation_deg ?? 0)
-  const showLabel = hovered || selected
 
   return (
     <group position={[placement.x, y, placement.z]}>
@@ -165,11 +161,6 @@ function PlacedItemImpl({ item, placement, index, hovered, selected, roomHeight,
         </group>
         {spec && state && <ItemLight spec={spec} state={state} shadow={shadow} />}
       </group>
-      {showLabel && (
-        <Html position={[0, item.h + 14, 0]} center zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
-          <div className="tag">{item.name}</div>
-        </Html>
-      )}
     </group>
   )
 }

@@ -22,6 +22,8 @@ from typing import Any, Dict, List, Literal, Optional, Tuple
 
 from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 
+from . import events
+
 ROOT = Path(__file__).resolve().parents[1]
 
 FLOORS = ["light_oak", "mid_oak", "dark_wood", "herringbone", "concrete", "tile_light", "tile_dark", "carpet"]
@@ -29,7 +31,7 @@ MATERIALS = ["oak", "light_wood", "walnut", "dark_wood", "linen", "cotton", "vel
              "brass", "black_metal", "chrome", "ceramic", "glass", "marble", "stone", "plastic", "painted"]
 LAYERS = ["ambient", "task", "accent"]
 SCENES = ["day", "evening", "reading", "night"]
-MAX_LLM_CALLS = 3
+MAX_LLM_CALLS = int(os.environ.get("PTAH_DESIGN_MAX_LLM_CALLS", 3))   # persisted ledger cap (the web server raises it via env)
 
 Floor = Literal["light_oak", "mid_oak", "dark_wood", "herringbone", "concrete", "tile_light", "tile_dark", "carpet"]
 Material = Literal["oak", "light_wood", "walnut", "dark_wood", "linen", "cotton", "velvet", "boucle", "wool", "leather", "rattan",
@@ -736,6 +738,7 @@ def extract_json(text: str) -> Dict[str, Any]:
         raise DesignError([f"the reply is not valid JSON: {e}"])
 
 
+@events.traced_llm("Designing your room with AI")   # activity event while the request is in flight (no-op without a job sink)
 def call_llm(messages: List[Dict[str, str]], purpose: str, timeout: float = 120.0, max_calls: int = MAX_LLM_CALLS,
              deadline_s: float = 150.0) -> str:
     """ONE OpenRouter chat completion with PTAH_SUB_LM (no SDK retries: every attempt counts against the daily quota; streamed so

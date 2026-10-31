@@ -356,6 +356,13 @@ class Candidate:
     aspect_pen: float = 0.0
     evaluated: bool = False
     score: float = 0.0
+    cohesion: Optional[Dict[str, Any]] = None   # ptah.products.cohesion breakdown (score_art / score_furniture), when scored
+    clusters: Optional[List[Dict[str, Any]]] = None
+    # analysis served from the on-disk cache (cache/analysis): the image is loaded lazily with curate.materialize
+    ahash: Optional[int] = None
+    min_side: Optional[int] = None
+    crop_box: Optional[Tuple[int, int, int, int]] = None
+    thumb_url: Optional[str] = None
 
     @property
     def title(self) -> str:

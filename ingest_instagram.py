@@ -46,22 +46,56 @@ def fix_text(s):
         return s
 
 
+class IngestError(Exception):
+    """The export cannot be used (message is user-friendly)."""
+
+
+HTML_WANTED = re.compile(r"(^|/)(saved_posts|liked_posts|saved_music)(_\d+)?\.html$")
+MAX_MEMBER_BYTES = 300 * 1024 * 1024     # one JSON file; guards against zip bombs
+
+
+def locate(src: Path) -> dict[str, list[str]]:
+    """The wanted files present in a folder or zip, as {kind: [relative names]}. Reads names only, never file contents.
+
+    Raises IngestError with a friendly message if the source is unusable (not a zip/folder, HTML format, nothing found)."""
+    names: list[str] = []
+    if src.is_file():
+        if not zipfile.is_zipfile(src):
+            raise IngestError("That file is not a zip archive. Upload the .zip you downloaded from Instagram.")
+        with zipfile.ZipFile(src) as z:
+            names = [i.filename for i in z.infolist() if not i.is_dir()]
+    elif src.is_dir():
+        names = [p.relative_to(src).as_posix() for p in src.rglob("*") if p.is_file()]
+    else:
+        raise IngestError(f"Not a folder or .zip: {src}")
+    found: dict[str, list[str]] = {}
+    for name in sorted(names):
+        for kind, rx in WANTED.items():
+            if rx.search(name):
+                found.setdefault(kind, []).append(name)
+    if not found:
+        if any(HTML_WANTED.search(n) for n in names):
+            raise IngestError("This export is in HTML format. Request your Instagram data again and choose the JSON format "
+                              "(Accounts Center > Your information and permissions > Download your information > Format: JSON).")
+        raise IngestError("No saved posts, liked posts or saved music found in this archive. Make sure the export was downloaded "
+                          "in JSON format and includes 'Your Instagram activity'.")
+    return found
+
+
 def load_files(src: Path):
     """Yield (kind, parsed_json) for every wanted file in a folder or zip."""
-    if src.is_file() and src.suffix == ".zip":
+    found = locate(src)
+    if src.is_file():
         with zipfile.ZipFile(src) as z:
-            for name in sorted(z.namelist()):
-                for kind, rx in WANTED.items():
-                    if rx.search(name):
-                        yield kind, json.loads(z.read(name))
-    elif src.is_dir():
-        for path in sorted(src.rglob("*.json")):
-            rel = path.relative_to(src).as_posix()
             for kind, rx in WANTED.items():
-                if rx.search(rel):
-                    yield kind, json.loads(path.read_text(encoding="utf-8"))
+                for name in found.get(kind, []):
+                    if z.getinfo(name).file_size > MAX_MEMBER_BYTES:
+                        raise IngestError(f"{name} is unexpectedly large; refusing to read it.")
+                    yield kind, json.loads(z.read(name))
     else:
-        sys.exit(f"Not a folder or .zip: {src}")
+        for kind in WANTED:
+            for name in found.get(kind, []):
+                yield kind, json.loads((src / name).read_text(encoding="utf-8"))
 
 
 def shortcode(url):
@@ -134,18 +168,19 @@ def parse_music(raw):
     return out
 
 
-def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("export", type=Path, help="Instagram export folder or .zip (JSON format)")
-    ap.add_argument("--out", type=Path, default=Path("data"), help="output folder (default: data/)")
-    args = ap.parse_args()
+def ingest(export: Path, out: Path, on_file=None) -> dict:
+    """Parse the export (folder or .zip) and write posts.jsonl, music.json, summary.json into ``out``. Returns the summary.
 
+    ``on_file(kind, n_done, n_total)`` is called after each JSON file (progress for the web pipeline)."""
     posts = {}  # key -> post record
     music, found = [], collections.Counter()
     raw_counts = collections.Counter()
+    total = sum(len(v) for v in locate(export).values())
 
-    for kind, raw in load_files(args.export):
+    for kind, raw in load_files(export):
         found[kind] += 1
+        if on_file:
+            on_file(kind, sum(found.values()), total)
         if kind == "saved_music":
             music.extend(parse_music(raw))
             continue
@@ -173,16 +208,12 @@ def main():
             elif rec["source"] != source:
                 rec["source"] = "both"
 
-    if not found:
-        sys.exit("No saved_posts / liked_posts / saved_music JSON files found. "
-                 "Make sure the export was downloaded in JSON format, not HTML.")
-
     rows = sorted(posts.values(), key=lambda r: r["date"] or "", reverse=True)
-    args.out.mkdir(parents=True, exist_ok=True)
-    with open(args.out / "posts.jsonl", "w", encoding="utf-8") as f:
+    out.mkdir(parents=True, exist_ok=True)
+    with open(out / "posts.jsonl", "w", encoding="utf-8") as f:
         for r in rows:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
-    (args.out / "music.json").write_text(json.dumps(music, ensure_ascii=False, indent=2), encoding="utf-8")
+    (out / "music.json").write_text(json.dumps(music, ensure_ascii=False, indent=2), encoding="utf-8")
 
     src_counts = collections.Counter(r["source"] for r in rows)
     tag_counts = collections.Counter(t for r in rows for t in r["hashtags"])
@@ -202,9 +233,20 @@ def main():
         "music_tracks": len(music),
         "music_artists": sorted({a for m in music for a in m["artists"]}),
     }
-    (args.out / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+    (out / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+    return summary
 
-    print(f"posts: {len(rows)} ({dict(src_counts)}) | music: {len(music)} | -> {args.out.resolve()}")
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("export", type=Path, help="Instagram export folder or .zip (JSON format)")
+    ap.add_argument("--out", type=Path, default=Path("data"), help="output folder (default: data/)")
+    args = ap.parse_args()
+    try:
+        summary = ingest(args.export, args.out)
+    except IngestError as e:
+        sys.exit(str(e))
+    print(f"posts: {summary['posts_total']} ({summary['posts_by_source']}) | music: {summary['music_tracks']} | -> {args.out.resolve()}")
 
 
 if __name__ == "__main__":

@@ -6,10 +6,9 @@ import type { Lighting, Room } from './types'
 import { roomBounds } from './geometry'
 import { makeCanvas } from './gfx'
 import type { RigRef } from './Post'
+import { HEAT_STOPS, STATUS } from './tokens'
 
-const STOPS: [number, string][] = [
-  [0, '#2b1055'], [0.18, '#3c3a9a'], [0.36, '#1e88b5'], [0.54, '#2cb58a'], [0.72, '#b4d94a'], [0.88, '#f7d03c'], [1, '#fff2c0'],
-]
+const STOPS = HEAT_STOPS
 const cols = STOPS.map(([t, c]) => [t, new THREE.Color(c)] as [number, THREE.Color])
 
 export function heatColor(t: number, out = new THREE.Color()): THREE.Color {
@@ -23,7 +22,6 @@ export function heatColor(t: number, out = new THREE.Color()): THREE.Color {
   return out.copy(cols[cols.length - 1][1])
 }
 export const heatCss = (t: number) => '#' + heatColor(t).getHexString(THREE.SRGBColorSpace)
-export const HEAT_GRADIENT = `linear-gradient(90deg, ${STOPS.map(([t, c]) => `${c} ${Math.round(t * 100)}%`).join(', ')})`
 
 export function heatDomain(l: Lighting): number {
   const all = (l.lux ?? []).flat().filter((v) => Number.isFinite(v)).sort((a, b) => a - b)
@@ -53,10 +51,10 @@ export interface ZoneMark { name: string; x: number; z: number; lux?: number; ta
 
 export function statusColor(s?: string): string {
   const v = (s ?? '').toLowerCase()
-  if (v === 'ok' || v === 'good' || v === 'met') return '#3f8a5a'
-  if (v === 'dim' || v === 'low') return '#d98a1c'
-  if (v === 'bright' || v === 'glare' || v === 'high') return '#c8553d'
-  return '#7b756c'
+  if (v === 'ok' || v === 'good' || v === 'met') return STATUS.ok
+  if (v === 'dim' || v === 'low') return STATUS.dim
+  if (v === 'bright' || v === 'glare' || v === 'high') return STATUS.high
+  return STATUS.none
 }
 
 export default function Heatmap({ room, lighting, rig, zones }: { room: Room; lighting: Lighting; rig: { current: RigRef }; zones: ZoneMark[] }) {

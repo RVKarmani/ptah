@@ -16,6 +16,7 @@ import type { LightSpec, LightStates } from './lights'
 import type { ShelfBlock } from './models'
 import { baseIntensity } from './lights'
 import { zoneLabel } from './zones'
+import { Balloons, Projector, type BalloonPoint } from './Balloons'
 import { FOV, defaultView, easeInOut, focusPose, lerpPose, type Pose } from './camera'
 
 export interface Quality { ao: boolean; bloom: boolean; tone: 'agx' | 'aces' }
@@ -34,6 +35,8 @@ interface Props {
   hoverId: string | null
   selectedId: string | null
   showScan: boolean
+  /** schedule number of each piece (balloons on the room) */
+  numbers: Map<string, string>
   /** bump to fly back to the default view */
   resetKey: number
   /** the first frames have been drawn (hides the loader and starts the intro) */
@@ -77,6 +80,10 @@ function CameraRig({ scene, itemsById, selectedId, resetKey, ready }: { scene: S
 
   const anim = useRef<Anim | null>(null)
   const saved = useRef<Pose | null>(null)
+  /** the pose saved before a close-up was the (auto-fitted) overview: on the way back, fit it again for today's plate size */
+  const savedIsDefault = useRef(false)
+  /** the user has orbited, panned or zoomed since the last automatic move: leave their view alone when the plate resizes */
+  const userMoved = useRef(false)
   const started = useRef(false)
   const lastReset = useRef(resetKey)
   const tmp = useMemo<Pose>(() => ({ pos: new THREE.Vector3(), target: new THREE.Vector3() }), [])
@@ -90,47 +97,64 @@ function CameraRig({ scene, itemsById, selectedId, resetKey, ready }: { scene: S
     if (ms <= 0 || reduceMotion()) { anim.current = null; apply(to); return }
     anim.current = { from: current(), to, t: 0, ms }
   }
+  const focusFor = (id: string): Pose | null => {
+    const it = itemsById.get(id)
+    const pl = scene.layout.placements.find((p) => p.item_id === id)
+    if (!it || !pl) return null
+    const c = current()
+    return focusPose(it, pl, c.pos, c.target, aspect, viewRef.current.fit)
+  }
 
   // park the camera on the intro start pose before the first paint
   useLayoutEffect(() => { if (controls) apply(viewRef.current.intro) }, [controls]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // user input cancels any running move
+  // user input cancels any running move, and from then on the view is theirs
   useEffect(() => {
     if (!controls) return
-    const stop = () => { anim.current = null }
+    const stop = () => { anim.current = null; userMoved.current = true }
     controls.addEventListener('start', stop)
     return () => controls.removeEventListener('start', stop)
   }, [controls])
 
+  // The plate was resized (window, side panel, bottom sheet) or the room changed: keep the room framed in the space that is left
+  const lastView = useRef(view)
+  useEffect(() => {
+    if (!controls || lastView.current === view) return
+    lastView.current = view
+    if (!started.current) { apply(view.intro); return }
+    if (userMoved.current) return
+    const to = selectedId ? focusFor(selectedId) ?? view.pose : view.pose
+    if (anim.current) anim.current.to = to
+    else apply(to)
+  }, [view]) // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (!ready || !controls) return
-    const focusFor = (id: string): Pose | null => {
-      const it = itemsById.get(id)
-      const pl = scene.layout.placements.find((p) => p.item_id === id)
-      if (!it || !pl) return null
-      const c = current()
-      return focusPose(it, pl, c.pos, c.target, aspect, viewRef.current.fit)
-    }
     if (!started.current) {
       started.current = true
       const intro = new URLSearchParams(window.location.search).get('intro') !== '0'
       const f = selectedId ? focusFor(selectedId) : null
-      if (f) { saved.current = viewRef.current.pose; go(f, intro ? 1800 : 0) } else go(viewRef.current.pose, intro ? 1900 : 0)
+      userMoved.current = false
+      if (f) { saved.current = viewRef.current.pose; savedIsDefault.current = true; go(f, intro ? 1800 : 0) } else go(viewRef.current.pose, intro ? 1900 : 0)
       return
     }
     if (resetKey !== lastReset.current) {
       lastReset.current = resetKey
       saved.current = null
+      userMoved.current = false
       go(viewRef.current.pose, 900)
       return
     }
     if (selectedId) {
       const f = focusFor(selectedId)
       if (!f) return
-      if (!saved.current) saved.current = current()
+      if (!saved.current) { saved.current = current(); savedIsDefault.current = !userMoved.current }
+      userMoved.current = false
       go(f, 800)
     } else if (saved.current) {
-      go(saved.current, 800)
+      const back = savedIsDefault.current ? viewRef.current.pose : saved.current
+      userMoved.current = !savedIsDefault.current
+      go(back, 800)
       saved.current = null
     }
   }, [ready, controls, selectedId, resetKey]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -194,6 +218,12 @@ export default function Viewer(p: Props) {
   const rig = useRef<RigRef>({ exposure: 1 })
   const registry = useRef(new Map<string, THREE.Object3D>())
   const specById = useMemo(() => new Map(specs.map((s) => [s.id, s])), [specs])
+  const els = useRef(new Map<string, HTMLElement>())
+  // where each piece's balloon is anchored: the middle of the piece
+  const points = useMemo<BalloonPoint[]>(() => layout.placements.flatMap((pl) => {
+    const it = itemsById.get(pl.item_id)
+    return it ? [{ id: it.id, x: pl.x, y: (pl.y ?? pl.elevation ?? 0) + it.h * 0.55, z: pl.z }] : []
+  }), [layout.placements, itemsById])
 
   // The three strongest point/spot fixtures cast shadows. Chosen from the fixtures themselves (not their on/off state)
   // so the set of shadow-casting lights never changes when a scene switches, which would recompile every material.
@@ -240,6 +270,7 @@ export default function Viewer(p: Props) {
   }, [room])
 
   return (
+    <>
     <Canvas
       flat
       shadows="percentage"
@@ -250,6 +281,7 @@ export default function Viewer(p: Props) {
         gl.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); p.onContextLost() })
       }}
       onPointerMissed={() => p.onSelect(null)}
+      role="img"
       aria-label="3D view of your room"
     >
       <Daylight room={room} timeH={timeH} rig={rig} />
@@ -275,8 +307,6 @@ export default function Viewer(p: Props) {
             item={item}
             placement={pl}
             index={i}
-            hovered={hoverId === item.id}
-            selected={selectedId === item.id}
             roomHeight={room.height}
             spec={spec}
             state={spec ? lightStates[item.id] ?? null : null}
@@ -292,9 +322,12 @@ export default function Viewer(p: Props) {
 
       {showHeat && lighting && <Heatmap room={room} lighting={lighting} rig={rig} zones={zones} />}
 
+      <Projector points={points} els={els} />
       <CameraRig scene={scene} itemsById={itemsById} selectedId={selectedId} resetKey={p.resetKey} ready={p.ready} />
       <Post rig={rig} ao={quality.ao} bloom={quality.bloom} mode={quality.tone} registry={registry} hoverId={hoverId} selectedId={selectedId} onFrame={p.onFrame} />
     </Canvas>
+    <Balloons items={itemsById} points={points} numbers={p.numbers} hoverId={hoverId} selectedId={selectedId} els={els} onHover={p.onHover} onSelect={p.onSelect} />
+    </>
   )
 }
 

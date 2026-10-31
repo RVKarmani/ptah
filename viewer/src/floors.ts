@@ -284,7 +284,11 @@ async function findFile(base: string, name: string): Promise<string | null> {
   return null
 }
 
+/** Real texture files are opt-in (?textures=1): probing for files that were never added would fill the console with 404s. */
+const WANT_FILES = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('textures') === '1'
+
 export function loadFloorFiles(id: string): Promise<FloorTex | null> {
+  if (!WANT_FILES) return Promise.resolve(null)
   const hit = fileCache.get(id)
   if (hit) return hit
   const f = floorById(id)

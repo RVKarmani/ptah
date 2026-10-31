@@ -333,15 +333,17 @@ def tune_lighting(items: List[Dict[str, Any]], room: Dict[str, Any], layout: Dic
 
 
 def build_and_solve(spec: DesignSpec, vocab: Vocab, room_in: Dict[str, Any], base_items: List[Dict[str, Any]],
-                    base_constraints: Dict[str, Any], log=print) -> Dict[str, Any]:
+                    base_constraints: Dict[str, Any], log=print, extra_items: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
     """Translate, solve, and if designed pieces do not fit, shrink them within their range once, then drop what still cannot be placed."""
     room = build_room(room_in, spec)
     t: Dict[str, float] = {}
     skip: set = set()
     notes: List[str] = []
     for rnd in range(4):
-        items = build_items(spec, vocab, base_items, t, skip)
+        items = build_items(spec, vocab, base_items, t, skip) + copy.deepcopy(extra_items or [])   # extra_items: user-owned pieces from the web form
         cons = build_constraints(items, room, base_constraints)
+        for ex in extra_items or []:
+            cons.setdefault(ex["id"], {"constraints": [{"type": "edge"}]})
         res = solve(room, items, cons, Budget(time_s=4.0, max_expansions=260, step=10.0), room_name="room.json")
         lay = res.layout
         bad = hard_violations(room, items, lay)

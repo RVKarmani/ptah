@@ -245,6 +245,41 @@ Category aliases are in `ptah/products/enrich.py` (`guitar_amp` -> `amp`, `pillo
   `hanger-1` (`attach_to` the guitar, `side: back`, `height: 168`), `spot-1` (picture-light spot, `attach_to` the guitar, `side: above`, `light.target: "guitar-1"`).
 
 
+### items.json, `alternatives` (real options; optional, from `run_scout.py --alternatives`)
+
+Every designed piece and every product may carry `alternatives`: up to 4 real candidates (passing the cohesion gate, or the closest near-misses), best first
+(passing options first, then the near-misses with the fewest reasons against them; look-alikes of the same picture, the current product and a store flooding the
+list are dropped; clashing / cool-grey / far-off colours are only listed to fill up to two). The viewer shows them in the item card and swaps the piece in the room
+when the user picks one.
+
+```json
+"alternatives": [{
+  "key": "a31455c264",                      // stable id within the item (sha1 of the product id, else the title)
+  "title": "Harriss Upholstered 91 \" Linen Sofa",
+  "store": "Wayfair", "price": "$1,959.99",
+  "url": "https://www.wayfair.com/...",     // merchant page, only when SerpApi's product detail gave one (else null); never a Google page, never built
+  "google_url": "https://www.google.com/search?ibp=oshop&...",   // the Google Shopping page SerpApi returned for the listing (null when none)
+  "other_stores": [{"store": "...", "url": "...", "price": "..."}],   // optional, from the same product detail
+  "image": "images/alt/sofa-1-a31455c264.jpg",   // local same-origin photo (relative to the data path), or null
+  "colors": {"primary": "#25364e", "secondary": "#516479", "accent": "#708aa2"},   // the product photo's own colours (a swap uses `primary`)
+  "score": 0.81,                            // overall cohesion 0..1
+  "passes": false,                          // true when it passes the swap gate (a passing option may still list small differences)
+  "misses": ["linen mixed with cotton, not pure linen", "noticeably darker than designed"],   // plain-language, at most 3; [] = matches the design
+  "cohesion": {"total": 0.81, "parts": {"palette": 0.92, "material": 0.65, "style": 0.73, "scale": 0.7, "quality": 1.0},
+               "palette": {"score": 0.88, "slot_dE": 14.9, "slot_cover": 0.99, "dominant": "#253750"},
+               "material": {"primary": "linen", "secondary": "cotton", "flags": []}, "gate": {"accepted": false, "reasons": ["..."]}},
+  "product_id": "14078277732566987787", "query": "...",
+  "w": 40, "h": 60                          // wall art only: the outer size this print would have (same frame shape as the current piece, so no new layout)
+}]
+```
+
+A designed piece the gate could not match also keeps `product_candidate` (its best candidate) with the same plain-language `misses`.
+Small textiles (`throw`, `cushion`) use a wider colour tolerance in the gate (accent colours 16 dE instead of 12, other colours 22 instead of 18;
+`cohesion.TEXTILE_GATE`); every other check and every other category stays strict.
+Client-side swap: the viewer keeps the user's picks per data path in localStorage (`ptah.choices.v1:<data base url>` = `{itemId: alternative key}`); a pick replaces the
+item's `name`, `image`, `price`, `url`, `source`, `product` (title / store / price / url / google_url / image_file) and `colors.primary` (keeping the designed secondary colour),
+and sets `designed: false`; geometry, material and layout are untouched.
+
 ## brief.json (from ptah.brief / run_brief.py, grounded in Qloo)
 
 `python run_brief.py` -> `data/brief.json` (git-ignored: it holds Qloo response data, never commit it). Built from the person's
@@ -282,3 +317,43 @@ most, best first: `[{"qloo_id", "name", "score"}]`. Tag `why` comes from running
 - `inspiration_places` only include places with a photo (`images`), at most 4 per kind; `local_shops` at most 3 per `shop_kind`.
 - `brands` are sorted by affinity; `tier` is the catalog group (`ptah/catalog/home_brands.json`), informational, so a consumer can pick
   across price points. `discovery` items are not among `inputs` (`filter.exclude.entities`) and suit poster / print ideas.
+
+
+## Pipeline events (from ptah/events.py, streamed by server/app.py, stored in `events.jsonl`)
+
+One job = one ordered stream of small JSON events. Over HTTP they arrive as Server-Sent Events: `GET /api/jobs/{id}/events`,
+`id: <seq>` + `data: <json>` per event (no named `event:` line, so a plain `EventSource.onmessage` gets everything; reconnects resume
+from `Last-Event-ID`; a finished and fully delivered job answers 204 so `EventSource` stops reconnecting; `: hb` comment every 15 s).
+Fields whose value would be `null` are omitted on the wire (they are present, as `null`, in `events.jsonl`).
+
+```
+{ "job_id": "9f1c...", "seq": 41, "ts": 1793380000.123,          // seq: 1,2,3... gap-free per job; ts: unix seconds (server clock)
+  "type": "stage_start|stage_progress|stage_end|activity_start|activity_end|log|result|error",
+  "stage": "ingest|taste|brief|design|products|layout|lighting",   // current stage (null before the first stage_start)
+  "progress": 0.37,          // OVERALL 0-1, never decreases, exactly 1.0 on `result`
+  "stage_progress": 0.5,     // this stage 0-1
+  "service": "qloo|llm|serpapi|compute",   // activity_* only
+  "id": "a1b2c3d4",          // activity_* only: pairs an activity_start with its activity_end
+  "label": "Qloo: tag lookup \"cozy\"",    // human text, safe to show as-is
+  "detail": { ... },         // small dict (<= 24 keys, strings <= 200 chars, never secrets); see below
+  "duration_ms": 812 }       // activity_end, stage_end
+```
+
+Stage weights of the overall bar: ingest 5, taste 45, brief 15, design 15, products 12, layout 5, lighting 3 (layout + lighting = 8). A job
+without an Instagram upload has no `ingest` stage and a small `taste` weight (6: only typed-in favourites are looked up); weights are
+renormalised. The first `stage_start` carries `detail.plan = [{stage, label, weight}]` (also in `GET /api/jobs/{id}` as `plan`).
+
+| type | meaning / detail |
+|---|---|
+| `stage_start`, `stage_end` | `label` = stage title (`Reading your posts`, `Understanding your taste`, `Asking Qloo what people like you love`, `Designing your room`, `Finding real pieces`, `Arranging the furniture`, `Planning the lighting`). `stage_end.detail` = counts (`posts`, `entities`, `places`, `concept`, `products`, ...); `cached: true` when the stage was skipped on resume; `skipped: true, reason` when a soft stage failed. |
+| `stage_progress` | `stage_progress` 0-1 and a `label` such as `Thinking about your posts (round 3 of 20)`. Throttled to at most 10 per second (the latest value always arrives). Sources: RLM iterations (taste), brief phases, a time-based nudge during opaque LLM / image-analysis calls, scout milestones (products). |
+| `activity_start` / `activity_end` | One external request in flight: `service` `qloo` (every live Qloo request; cache hits emit nothing), `llm` (every DSPy LM call incl. RLM sub-queries, and the design call), `serpapi` (every live shopping search), `compute` (ingest parsing, layout solve, lighting). Several can overlap: keep a counter per service, pulse while it is > 0. `activity_end.detail.ok` is false on failure. |
+| `log` | Short sentence for a ticker. `detail.warning: true` marks a degradation the person may want to know about (`Qloo did not know: ...`). |
+| `result` | Last event of a successful job: `detail` = `{viewer: "viewer/", partial, skipped: [stages], warnings: [...], items, products, owned, cost?}`. `partial: true` = a soft stage (products / layout / lighting) failed and the bundle shows the earlier result. Open it with `/?data=/api/jobs/{id}/viewer/`. |
+| `error` | Last event of a failed job: `label` is a friendly sentence; `detail` = `{code, hint, retryable, stage, technical?}`. Codes: `bad_export`, `empty_export`, `bad_room`, `missing_input`, `qloo_not_configured`, `qloo_unavailable`, `qloo_cap`, `llm_not_configured`, `llm_budget`, `no_taste`, `design_rejected`, `layout_failed`, `cancelled`, `internal`. `technical` is scrubbed of keys and truncated; show it only in a collapsible. A retryable job can be resumed (`POST /api/jobs/{id}/resume`): finished stages replay as `stage_end` with `detail.cached: true` and `seq` keeps counting. |
+
+Typical order: `stage_start` -> (`stage_progress` | `activity_*` | `log`)* -> `stage_end`, repeated per stage, then `result` (or `error` at any point).
+
+### Bundle served at `/api/jobs/{id}/viewer/`
+`room.json`, `items.json`, `layout.json`, `lighting.json`, `taste.json` (+ `budget` when the person gave one) and `images/*.jpg`: exactly what the viewer reads with
+`?data=<prefix>` (see "room.json" ... above). JSON is gzip-encoded, `ETag` + `Cache-Control: no-cache` (revalidate); images are `public, max-age=86400` once the job is done.

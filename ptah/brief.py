@@ -25,7 +25,7 @@ import json
 from pathlib import Path
 from typing import Any, Iterable
 
-from . import qloo
+from . import events, qloo
 from .data import DATA_DIR
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -277,16 +277,23 @@ def build_brief(entity_ids: Iterable[Any], location: str = "New York City", *, t
     for i, n in names.items():
         qloo.remember(i, n)
     ids = _ids(entities)
+    events.progress(0.03, "Reading the decor styles behind your taste")           # progress hooks: no-ops without a job sink
     taste = taste_analysis(entities, names, with_why=tag_why)
     decor = taste["decor"]
+    events.progress(0.35, "Ranking home brands for your taste")
     brands, unresolved = brand_ranking(ids, names, catalog)
+    events.progress(0.5, "Finding places with interiors you would love")
+    places = inspiration_places(ids, decor, location, names)
+    events.progress(0.72, f"Finding shops near {location}")
+    shops = local_shops(ids, decor, location, names)
+    events.progress(0.9, "Finding films, music and books you might love")
     return {
         "location": location,
         "inputs": [{k: e[k] for k in ("qloo_id", "name", "type")} for e in entities],
         "skipped_inputs": skipped_inputs or [],
         "taste": taste,
-        "inspiration_places": inspiration_places(ids, decor, location, names),
-        "local_shops": local_shops(ids, decor, location, names),
+        "inspiration_places": places,
+        "local_shops": shops,
         "brands": brands,
         "brands_unresolved": unresolved,
         "discovery": discovery(ids, names),

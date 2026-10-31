@@ -1,3 +1,4 @@
+import { COLORS } from './tokens'
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
@@ -708,7 +709,7 @@ function abstractArt(item: Item, aspect: number): THREE.CanvasTexture {
   const ec = effColors(item)
   const a = safeColor(ec.primary, '#d9cdb8')
   const b = safeColor(ec.secondary, '#6e7f6a')
-  const acc = safeColor(ec.accent, '#c8553d')
+  const acc = safeColor(ec.accent, COLORS.day.rubric)
   const css = (col: THREE.Color) => '#' + col.getHexString(THREE.SRGBColorSpace)
   ctx.fillStyle = css(a.clone().lerp(new THREE.Color('#ffffff'), 0.45))
   ctx.fillRect(0, 0, W, H)

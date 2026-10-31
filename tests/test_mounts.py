@@ -112,9 +112,12 @@ def test_picture_light_above_art_and_art_on_wall(sample):
 def test_sconce_never_on_window_or_door():
     room = load("room.json")
     items = [item("sconce-1", "sconce", 16, 16, 24), item("sconce-2", "sconce", 16, 16, 24)]
-    for hint_x in (200, 160, 250, 60):
+    win = RoomContext(room).windows[0]                     # window span derived from room.json (wall w3 = the far z wall)
+    wcx, wlo, whi = win.zone.x, win.zone.x - win.zone.w / 2, win.zone.x + win.zone.w / 2
+    wall_z = max(p[1] for p in room["floor"])
+    for hint_x in (wcx, wlo + 30, whi - 30, wlo - 70):     # centre, near either jamb, and clear of the window
         cons = {"sconce-1": {"constraints": [{"type": "wall_mounted", "height": 150, "wall": "w3"}, {"type": "near", "target": "win1"}],
-                             "hint": {"x": hint_x, "z": 352}},
+                             "hint": {"x": hint_x, "z": wall_z - 8}},
                 "sconce-2": {"constraints": [{"type": "wall_mounted", "height": 150, "wall": "w1"}, {"type": "near", "target": "door1"}]}}
         lay = plan_layout(room, items, cons)
         ctx = RoomContext(room)
@@ -128,7 +131,7 @@ def test_sconce_never_on_window_or_door():
     cons = {"sconce-1": {"constraints": [{"type": "wall_mounted", "height": 40, "wall": "w3"}, {"type": "center_align", "target": "win1"}]}}
     lay = plan_layout(room, items[:1], cons)
     q = lay["placements"][0]
-    assert 130 <= q["x"] <= 290
+    assert wlo <= q["x"] <= whi
 
 
 def test_mounted_items_do_not_overlap_each_other_or_tall_furniture():

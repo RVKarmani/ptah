@@ -104,7 +104,9 @@ def test_grid_shape_and_scene_presets(sample):
     room, items, lay = sample
     res = compute_lighting(room, items, lay)
     cols, rows = res["size"]
-    assert (cols, rows) == (17, 15) and res["grid_cm"] == 25 and res["plane_cm"] == 75 and res["origin"] == [0, 0]
+    xs, zs = [p[0] for p in room["floor"]], [p[1] for p in room["floor"]]
+    assert (cols, rows) == (math.ceil((max(xs) - min(xs)) / 25), math.ceil((max(zs) - min(zs)) / 25))
+    assert res["grid_cm"] == 25 and res["plane_cm"] == 75 and res["origin"] == [min(xs), min(zs)]
     for sc in res["scenes"].values():
         assert len(sc["lux"]) == rows and all(len(r) == cols for r in sc["lux"])
     assert res["scene_presets"] == SCENES
@@ -162,7 +164,7 @@ def test_low_ambient_without_fixture_flag_still_reported(sample):
     room, items, lay = sample
     its = copy.deepcopy(items)
     for i in its:
-        if i["id"] == "pendant-1":
+        if (i.get("light") or {}).get("layer") == "ambient":      # every ambient fixture (pendant + flush mount)
             i["light"]["lumens"] = 300
     res = compute_lighting(room, its, lay)
     assert "NO_AMBIENT" in codes(res, "evening")
@@ -210,8 +212,8 @@ def test_day_scene_follows_hour_and_windows(sample):
     assert noon["scene"] == "day" and noon["mode"] == "day"
     assert noon["scenes"]["day"]["ambient_avg_lux"] > morning["scenes"]["day"]["ambient_avg_lux"] > 0
     assert night["scenes"]["day"]["lux_max"] == 0
-    g = noon["lux"]   # window on the bottom wall (z=360): rows near it are brighter than the back of the room
-    assert np.mean([v for v in g[13] if v is not None]) > np.mean([v for v in g[1] if v is not None])
+    g = noon["lux"]   # window on the far wall (max z): the rows next to it are brighter than the back of the room
+    assert np.mean([v for v in g[len(g) - 2] if v is not None]) > np.mean([v for v in g[1] if v is not None])
     # the lamp scenes do not depend on the hour
     assert noon["scenes"]["reading"]["lux"] == morning["scenes"]["reading"]["lux"]
 

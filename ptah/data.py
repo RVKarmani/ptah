@@ -5,6 +5,7 @@ sees their docstrings, so keep them accurate.
 """
 from __future__ import annotations
 
+import contextlib
 import json
 from functools import lru_cache
 from pathlib import Path
@@ -14,11 +15,28 @@ CAPTION_CUT = 300
 MAX_LIMIT = 50
 
 
-@lru_cache(maxsize=1)
-def load_posts() -> list[dict]:
-    """Load data/posts.jsonl once (cached)."""
+_override: Path | None = None    # per-job data dir (server pipeline); process-wide because tools run on helper threads
+
+
+@contextlib.contextmanager
+def use_data_dir(path: Path | str | None):
+    """Temporarily read posts/music/summary from ``path`` instead of data/ (used by the web pipeline, one job at a time)."""
+    global _override
+    prev, _override = _override, (Path(path) if path else None)
+    try:
+        yield
+    finally:
+        _override = prev
+
+
+def _dir() -> Path:
+    return _override or DATA_DIR
+
+
+@lru_cache(maxsize=4)
+def _load_posts(path: Path) -> list[dict]:
     posts = []
-    with open(DATA_DIR / "posts.jsonl", encoding="utf-8") as f:
+    with open(path / "posts.jsonl", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if line:
@@ -26,18 +44,25 @@ def load_posts() -> list[dict]:
     return posts
 
 
-@lru_cache(maxsize=1)
+@lru_cache(maxsize=4)
+def _load_json(path: Path):
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def load_posts() -> list[dict]:
+    """Load posts.jsonl once per data dir (cached)."""
+    return _load_posts(_dir())
+
+
 def load_music() -> list[dict]:
-    """Load data/music.json once (cached)."""
-    with open(DATA_DIR / "music.json", encoding="utf-8") as f:
-        return json.load(f)
+    """Load music.json once per data dir (cached)."""
+    return _load_json(_dir() / "music.json")
 
 
-@lru_cache(maxsize=1)
 def load_summary() -> dict:
-    """Load data/summary.json once (cached)."""
-    with open(DATA_DIR / "summary.json", encoding="utf-8") as f:
-        return json.load(f)
+    """Load summary.json once per data dir (cached)."""
+    return _load_json(_dir() / "summary.json")
 
 
 def _clamp(limit: int, default: int) -> int:

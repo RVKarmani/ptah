@@ -117,10 +117,11 @@ def test_door_swing_zone_respected(sample):
 def test_window_rule_respected(sample):
     room, items, cons = sample
     cons = copy.deepcopy(cons)
-    cons["shelf-1"] = {"constraints": [], "hint": {"x": 210, "z": 340, "rotation_deg": 180}}  # 180 cm shelf in front of the window
-    cons["plant-1"] = {"constraints": [], "hint": {"x": 200, "z": 335, "rotation_deg": 180}}
+    win = RoomContext(room).windows[0]
+    zone = Rect(win.zone.x, win.zone.z, win.zone.w, win.zone.d, win.zone.rot)  # window span x 40 cm deep, derived from room.json
+    cons["shelf-1"] = {"constraints": [], "hint": {"x": zone.x, "z": zone.z, "rotation_deg": 180}}  # tall shelf in front of the window
+    cons["plant-1"] = {"constraints": [], "hint": {"x": zone.x - 10, "z": zone.z - 5, "rotation_deg": 180}}
     lay = plan_layout(room, items, cons)
-    zone = Rect(210, 340, 160, 40, 0)  # window span x 130..290, 40 cm deep
     heights = {i["id"]: i["h"] for i in items}
     for pl in lay["placements"]:
         r, it = rect_of(pl, items)
@@ -156,14 +157,17 @@ def test_rotation_convention():
 def test_hint_pulls_item_and_is_optional(sample):
     room, items, cons = sample
     cons = copy.deepcopy(cons)
+    cons["lamp-1"].pop("hint", None)     # the sample pins the reading lamp next to the sofa with a hint; start without it
     base = by_item(plan_layout(room, items, cons))["lamp-1"]
     cons["lamp-1"]["constraints"] = []
     cons["lamp-1"].pop("zone", None)
     no_hint = by_item(plan_layout(room, items, cons))["lamp-1"]
-    cons["lamp-1"]["hint"] = {"x": 395, "z": 330, "rotation_deg": 180}
+    xs, zs = [p[0] for p in room["floor"]], [p[1] for p in room["floor"]]
+    hx, hz = min(xs) + 0.75 * (max(xs) - min(xs)), min(zs) + 25   # a free spot on the TV wall, east of the console (a tall lamp likes a wall)
+    cons["lamp-1"]["hint"] = {"x": hx, "z": hz, "rotation_deg": 180}
     lay = plan_layout(room, items, cons)
     hinted = by_item(lay)["lamp-1"]
-    assert ((hinted["x"] - 395) ** 2 + (hinted["z"] - 330) ** 2) ** 0.5 <= 25
+    assert ((hinted["x"] - hx) ** 2 + (hinted["z"] - hz) ** 2) ** 0.5 <= 25
     assert hinted["rotation_deg"] == 180 and "hint" in hinted["satisfied"]
     assert (no_hint["x"], no_hint["z"]) != (hinted["x"], hinted["z"])
     assert "hint" not in base["satisfied"] + base["violated"]

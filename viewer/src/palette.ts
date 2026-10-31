@@ -20,4 +20,3 @@ export function categoryColor(cat: string, id: string): string {
   return FALLBACK[h % FALLBACK.length]
 }
 
-export const ACCENT = '#c8553d'

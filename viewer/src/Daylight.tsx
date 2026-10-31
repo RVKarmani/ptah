@@ -32,9 +32,11 @@ export default function Daylight({ room, timeH, rig }: { room: Room; timeH: numb
   useEffect(() => {
     const envI = lerp(0.012, 0.85, sun.dayFactor)
     scene.environmentIntensity = envI
-    const bg = new THREE.Color('#0a0c11').lerp(new THREE.Color('#dcd6ca'), Math.pow(sun.dayFactor, 0.8))
-    scene.background = bg
-    rig.current.exposure = lerp(3.0, 1.9, Math.pow(sun.dayFactor, 0.7))
+    // The room is drawn on a transparent canvas: the plate behind it (the sheet's recessed well, with the canon grid) is CSS, so it is exactly
+    // the palette whatever the hour and the tone mapping.
+    scene.background = null
+    const exposure = lerp(3.0, 1.9, Math.pow(sun.dayFactor, 0.7))
+    rig.current.exposure = exposure
   }, [scene, sun, rig])
 
   // drei's Environment re-bakes and RESETS scene.environmentIntensity whenever its `children`

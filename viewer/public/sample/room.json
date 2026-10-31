@@ -1,21 +1,109 @@
 {
   "name": "Sample living room",
   "height": 260,
-  "floor": [[0,0],[420,0],[420,360],[0,360]],
+  "floor": [
+    [
+      0,
+      0
+    ],
+    [
+      580,
+      0
+    ],
+    [
+      580,
+      480
+    ],
+    [
+      0,
+      480
+    ]
+  ],
   "walls": [
-    {"id":"w1","start":[0,0],"end":[420,0]},
-    {"id":"w2","start":[420,0],"end":[420,360]},
-    {"id":"w3","start":[420,360],"end":[0,360]},
-    {"id":"w4","start":[0,360],"end":[0,0]}
+    {
+      "id": "w1",
+      "start": [
+        0,
+        0
+      ],
+      "end": [
+        580,
+        0
+      ]
+    },
+    {
+      "id": "w2",
+      "start": [
+        580,
+        0
+      ],
+      "end": [
+        580,
+        480
+      ]
+    },
+    {
+      "id": "w3",
+      "start": [
+        580,
+        480
+      ],
+      "end": [
+        0,
+        480
+      ]
+    },
+    {
+      "id": "w4",
+      "start": [
+        0,
+        480
+      ],
+      "end": [
+        0,
+        0
+      ]
+    }
   ],
   "openings": [
-    {"id":"door1","type":"door","wall":"w1","offset":30,"width":85,"height":205,"swing":90},
-    {"id":"win1","type":"window","wall":"w3","offset":130,"width":160,"height":140,"sill":90}
+    {
+      "id": "door1",
+      "type": "door",
+      "wall": "w1",
+      "offset": 40,
+      "width": 85,
+      "height": 205,
+      "swing": 90
+    },
+    {
+      "id": "win1",
+      "type": "window",
+      "wall": "w3",
+      "offset": 200,
+      "width": 180,
+      "height": 140,
+      "sill": 90
+    }
   ],
   "existing": [
-    {"id":"rad1","category":"radiator","x":340,"z":352,"w":80,"d":10,"h":60,"rotation_deg":180}
+    {
+      "id": "rad1",
+      "category": "radiator",
+      "x": 470,
+      "z": 472,
+      "w": 80,
+      "d": 10,
+      "h": 60,
+      "rotation_deg": 180
+    }
   ],
-  "finishes": {"floor": "light_oak", "wall_color": "#f2efe8", "wall_paint": null},
+  "finishes": {
+    "floor": "light_oak",
+    "wall_color": "#f2efe8",
+    "wall_paint": null
+  },
   "can_paint": true,
-  "scan": {"glb": null}
+  "scan": {
+    "glb": null
+  }
 }

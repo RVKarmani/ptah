@@ -18,6 +18,7 @@ import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from .. import events
 from ..env import ROOT, load_dotenv
 
 ENDPOINT = "https://serpapi.com/search.json"
@@ -140,7 +141,8 @@ class SerpApiClient:
             raise SerpApiError("SERPAPI_KEY is not set (put it in .env)")
         send = dict(params, api_key=self._key)
         try:
-            status, body = self.transport(ENDPOINT, send)
+            with events.activity("serpapi", f"Shopping search: {label[:60]}"):   # no-op without a job sink
+                status, body = self.transport(ENDPOINT, send)
         except Exception as e:  # network errors: scrub, never leak the key through a URL in the message
             raise SerpApiError(f"SerpApi request failed: {_scrub(str(e), self._key)}") from None
         self.live_calls += 1

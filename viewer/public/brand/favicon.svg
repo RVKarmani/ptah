@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <style>.sq{fill:#1b1a18}.dj{fill:#e6e4dc}@media (prefers-color-scheme:dark){.sq{fill:#dcdad1}.dj{fill:#1a1b1d}}</style>
+  <rect class="sq" width="64" height="64"/>
+  <path class="dj" transform="translate(32 32) scale(1.08) translate(-32 -32)" fill-rule="evenodd" d="M19.5 10H33A15.5 15.5 0 0 1 33 41H28.5V49H32.5V54H15.5V49H19.5ZM28.5 15.5H38.5A1.5 1.5 0 0 1 38.5 18.5H28.5ZM28.5 24H41.5A1.5 1.5 0 0 1 41.5 27H28.5ZM28.5 32.5H38.5A1.5 1.5 0 0 1 38.5 35.5H28.5Z"/>
+</svg>

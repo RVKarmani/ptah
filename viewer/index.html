@@ -2,12 +2,41 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ptah — your room, furnished</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23c8553d'/><path d='M9 22V10h7a4 4 0 010 8h-3' stroke='white' stroke-width='3' fill='none' stroke-linecap='round'/></svg>" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#d5d3ca" />
+    <meta name="description" content="Ptah furnishes and lights a room around your taste, drawn as a set of sheets you can explore in 3D." />
+    <title>Ptah, a room from your taste</title>
+    <link rel="icon" type="image/svg+xml" href="./brand/favicon.svg" />
+    <!-- the day or night sheet is chosen before the first paint, so there is never a flash of the wrong one -->
+    <script>
+      (function () {
+        var t = 'day';
+        try {
+          var s = localStorage.getItem('ptah.theme');
+          t = s === 'day' || s === 'night' ? s : (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'night' : 'day');
+        } catch (e) {}
+        document.documentElement.setAttribute('data-theme', t);
+        var m = document.querySelector('meta[name="theme-color"]');
+        if (m) m.setAttribute('content', t === 'night' ? '#101112' : '#d5d3ca');
+      })();
+    </script>
+    <link rel="preload" href="./fonts/newsreader-var.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="./fonts/barlow-semi-condensed-500.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="./fonts/barlow-semi-condensed-600.woff2" as="font" type="font/woff2" crossorigin />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- shown until the app takes over, so the first paint is never a blank page -->
+      <div class="loading" role="status">
+        <div class="load-mark" aria-hidden="true">
+          <svg class="logo-img" width="56" height="56" viewBox="0 0 64 64" focusable="false"><rect width="64" height="64" fill="var(--carbon)" /><path transform="translate(32 32) scale(1.08) translate(-32 -32)" fill="var(--paper)" fill-rule="evenodd" d="M19.5 10H33A15.5 15.5 0 0 1 33 41H28.5V49H32.5V54H15.5V49H19.5ZM28.5 15.5H38.5A1.5 1.5 0 0 1 38.5 18.5H28.5ZM28.5 24H41.5A1.5 1.5 0 0 1 41.5 27H28.5ZM28.5 32.5H38.5A1.5 1.5 0 0 1 38.5 35.5H28.5Z" /></svg>
+        </div>
+        <b>Opening your room</b>
+        <p class="muted">Gathering your design.</p>
+        <div class="load-bar" aria-hidden="true"><i></i></div>
+      </div>
+    </div>
+    <noscript><p style="position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:#d5d3ca;margin:0;font:17px Georgia,serif;color:#1b1a18">Ptah needs JavaScript to show your room in 3D.</p></noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -1,16 +1,15 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
-import { Canvas, useThree } from '@react-three/fiber'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import type { Item } from './types'
 import { buildModel, templateOf } from './models'
 import { kelvinTint } from './color'
-import { categoryColor } from './palette'
+import { Glyph, glyphFor } from './ui'
 import { Boundary } from './Boundary'
 
-const THIN = new Set(['art', 'poster', 'mirror', 'tv', 'picture_light', 'frame', 'guitar', 'guitar_hanger', 'rug', 'sconce'])
-const FOV = 30
+import { THIN, FOV } from './snapshot'
 
 /** Studio light + a generated room environment, so materials read like they do in the room (no network needed). */
 function Studio() {
@@ -67,7 +66,13 @@ function Model({ item }: { item: Item }) {
   return <primitive object={built.group} position={[-fit.c.x, -fit.c.y, -fit.c.z]} />
 }
 
-function Preview({ item }: { item: Item }) {
+function FirstFrame({ onReady }: { onReady: () => void }) {
+  const done = useRef(false)
+  useFrame(() => { if (!done.current) { done.current = true; onReady() } })
+  return null
+}
+
+function Preview({ item, onReady }: { item: Item; onReady: () => void }) {
   const thin = THIN.has(templateOf(item))
   return (
     <Canvas
@@ -75,41 +80,54 @@ function Preview({ item }: { item: Item }) {
       dpr={[1, 2]}
       camera={{ fov: FOV, near: 5, far: 4000 }}
       gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}
+      role="img"
       aria-label={`Turnable 3D preview of ${item.name}`}
     >
       <Studio />
       <Model item={item} />
+      <FirstFrame onReady={onReady} />
       <OrbitControls enablePan={false} enableZoom={false} autoRotate={!thin} autoRotateSpeed={1.4} enableDamping rotateSpeed={0.8} />
     </Canvas>
   )
 }
 
-function Flat({ item, src }: { item: Item; src: string | null }) {
-  const [bad, setBad] = useState(false)
-  if (src && !bad) return <img className="photo" src={src} alt={item.name} referrerPolicy="no-referrer" onError={() => setBad(true)} />
-  return <div className="hero-flat"><span className="swatch" style={{ background: categoryColor(item.category, item.id) }} /></div>
+/** The "X in a box" stand-in of a drawing: the pictogram on crossed diagonals, until a photo or the 3D model is ready. */
+function Flat({ item }: { item: Item }) {
+  return (
+    <div className="hero-flat" aria-hidden>
+      <svg className="x" preserveAspectRatio="none" viewBox="0 0 10 10"><line x1="0" y1="0" x2="10" y2="10" /><line x1="10" y1="0" x2="0" y2="10" /></svg>
+      <Glyph name={glyphFor(item.category)} />
+    </div>
+  )
 }
 
 /**
- * Detail-panel hero: a small live 3D model you can turn. Items with a product photo get a 3D / Photo switch.
- * If WebGL fails the hero quietly falls back to the photo or a colour swatch.
+ * Detail-panel hero. A piece with a product photo opens on the photo (3D one tap away); everything else opens on a
+ * live 3D model you can turn. While the 3D view compiles a soft placeholder shows, and if WebGL or the photo fails the
+ * hero quietly falls back to whatever still works.
  */
 export default function ItemHero({ item, imageUrl }: { item: Item; imageUrl: string | null }) {
-  const [view, setView] = useState<'3d' | 'photo'>('3d')
+  const [photoBad, setPhotoBad] = useState(false)
+  const photo = imageUrl && !photoBad ? imageUrl : null
+  const [view, setView] = useState<'3d' | 'photo'>(photo ? 'photo' : '3d')
+  const [live, setLive] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+  const shown = view === 'photo' && photo ? 'photo' : '3d'
   return (
     <div className="hero">
-      {view === '3d' ? (
-        <Boundary fallback={<Flat item={item} src={imageUrl} />}>
-          <Preview item={item} />
-          <span className="hero-cap">Drag to turn</span>
-        </Boundary>
+      {!(live || loaded) && <Flat item={item} />}
+      {shown === 'photo' && photo ? (
+        <img className={'photo' + (loaded ? ' in' : '')} src={photo} alt={item.name} referrerPolicy="no-referrer" onLoad={() => setLoaded(true)} onError={() => setPhotoBad(true)} />
       ) : (
-        <Flat item={item} src={imageUrl} />
+        <Boundary fallback={null}>
+          <div className={'hero-3d' + (live ? ' in' : '')}><Preview item={item} onReady={() => setLive(true)} /></div>
+          {live && <span className="hero-cap">Drag to turn</span>}
+        </Boundary>
       )}
-      {imageUrl && (
+      {photo && (
         <div className="seg" role="group" aria-label="Preview type">
-          <button aria-pressed={view === '3d'} onClick={() => setView('3d')}>3D</button>
-          <button aria-pressed={view === 'photo'} onClick={() => setView('photo')}>Photo</button>
+          <button aria-pressed={shown === 'photo'} onClick={() => setView('photo')}>Photo</button>
+          <button aria-pressed={shown === '3d'} onClick={() => setView('3d')}>3D</button>
         </div>
       )}
     </div>

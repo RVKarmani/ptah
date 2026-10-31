@@ -5,3 +5,7 @@ numpy>=1.26
 matplotlib>=3.7  # tools/render_layout.py only
 pytest>=8  # tests
 requests>=2.31  # SerpApi client + thumbnail download (ptah/products)
+fastapi>=0.110  # backend (server/)
+uvicorn>=0.29  # backend server
+python-multipart>=0.0.9  # streaming uploads
+httpx>=0.27  # TestClient + tests

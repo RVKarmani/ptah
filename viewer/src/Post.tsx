@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, type MutableRefObject } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
+import { OUTLINE } from './tokens'
+import { useTheme } from './theme'
 import { BloomEffect, Effect, EffectComposer, EffectPass, OutlineEffect, RenderPass, SMAAEffect, ToneMappingEffect, ToneMappingMode } from 'postprocessing'
 import { N8AOPostPass } from 'n8ao'
 
@@ -73,6 +75,7 @@ export default function Post({
   onFrame?: (n: number) => void
 }) {
   const { gl, scene, camera, size } = useThree()
+  const [theme] = useTheme()
   const fx = useMemo(() => {
     const composer = new EffectComposer(gl, { frameBufferType: THREE.HalfFloatType, multisampling: 0 })
     composer.addPass(new RenderPass(scene, camera))
@@ -92,14 +95,15 @@ export default function Post({
     const bloomFx = new BloomEffect({ intensity: 0.55, luminanceThreshold: 1.0, luminanceSmoothing: 0.35, mipmapBlur: true, radius: 0.72 })
     const tone = new ToneMappingEffect({ mode: ToneMappingMode.AGX })
     composer.addPass(new EffectPass(camera, exposure, bloomFx, tone))
-    // soft halos (after tone mapping so they stay crisp): warm for the selected piece, faint white for hover
-    const sel = new Halo(scene, camera, 3.2, 0xffd9a0, 0x7a5f36, true)
-    const hov = new Halo(scene, camera, 1.1, 0xfff4e0, 0x4d4638, false)
+    // soft halos (after tone mapping so they stay crisp): rubric for the chosen piece, chalk for hover
+    const o = OUTLINE[theme]
+    const sel = new Halo(scene, camera, 6, o.sel, o.selHidden, true)
+    const hov = new Halo(scene, camera, 1.1, o.hov, o.hovHidden, false)
     composer.addPass(new EffectPass(camera, sel.effect, hov.effect))
     composer.addPass(new EffectPass(camera, new SMAAEffect()))
     return { composer, n8, exposure, bloomFx, tone, sel, hov }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gl, scene, camera])
+  }, [gl, scene, camera, theme])
 
   useEffect(() => { fx.composer.setSize(size.width, size.height) }, [fx, size.width, size.height])
   useEffect(() => { fx.n8.enabled = ao }, [fx, ao])

@@ -24,6 +24,9 @@ export interface Finishes {
   floor?: string | null
   wall_color?: string | null
   wall_paint?: WallPaint | null
+  /** optional wall-colour alternatives from the design (hex strings or {hex, name}); `alternatives` is accepted too */
+  palette?: (string | { hex: string; name?: string })[] | null
+  alternatives?: (string | { hex: string; name?: string })[] | null
 }
 export interface Room {
   name?: string
@@ -80,7 +83,12 @@ export interface Item {
   focal?: boolean
   /** optional structured explanation: signals (A + B) -> taste reading (C) -> this piece */
   why_chain?: WhyChain | null
+  /** the real product this piece points to (retailer listing) */
+  product?: Product | null
+  /** a concept Ptah designed for you rather than a product to buy */
+  designed?: boolean | null
 }
+export interface Product { title?: string | null; store?: string | null; price?: string | null; url?: string | null }
 export interface WhyChain { signals?: string[]; reading?: string }
 export interface Placement {
   item_id: string

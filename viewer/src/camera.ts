@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import type { Item, Placement, Scene } from './types'
-import { roomBounds } from './geometry'
+import { roomBounds, wallInfos } from './geometry'
 import { templateOf } from './models'
 
 /** Camera planning: default dollhouse view, intro path, close-up on an item. Pure functions, no React. */
@@ -24,6 +24,64 @@ const at = (target: THREE.Vector3, az: number, el: number, dist: number) =>
 /** unit horizontal direction an item faces (its +z after rotation) */
 const facing = (rotDeg: number): [number, number] => [Math.sin(rotDeg * RAD), Math.cos(rotDeg * RAD)]
 
+/** Share of the plate's half-width / half-height left empty around the room when it is framed. */
+export const FRAME_MARGIN = 0.045
+
+/**
+ * Frames the room as it is drawn from this direction (the floor, plus the far walls at full height: the walls
+ * between the camera and the room are cut down to a curb) so that it fills the visible plate with a small margin.
+ * Solves the camera distance exactly for the current aspect, then re-centres the target so the room sits in the
+ * middle of the plate instead of being fitted by a bounding sphere.
+ */
+export function frameRoom(scene: Scene, az: number, el: number, aspect: number, margin = FRAME_MARGIN): Pose & { dist: number } {
+  const { room } = scene
+  const b = roomBounds(room)
+  const H = room.height
+  const dir = new THREE.Vector3(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el))
+  const fwd = dir.clone().negate()
+  const right = new THREE.Vector3().crossVectors(fwd, new THREE.Vector3(0, 1, 0)).normalize()
+  const up = new THREE.Vector3().crossVectors(right, fwd).normalize()
+  const tanV = Math.tan((FOV * RAD) / 2)
+  const ty = tanV * (1 - margin)
+  const tx = tanV * aspect * (1 - margin)
+
+  // which walls stand tall from here (same test as the room model, with the camera far out along `dir`)
+  const far = 600
+  const cam = new THREE.Vector3(b.cx + dir.x * far, 0, b.cz + dir.z * far)
+  const pts: THREE.Vector3[] = room.floor.map(([x, z]) => new THREE.Vector3(x, 0, z))
+  for (const w of wallInfos(room)) {
+    const outside = (cam.x - w.mid[0]) * w.inward[0] + (cam.z - w.mid[1]) * w.inward[1] < -5
+    if (outside) continue
+    pts.push(new THREE.Vector3(w.wall.start[0], H, w.wall.start[1]), new THREE.Vector3(w.wall.end[0], H, w.wall.end[1]))
+  }
+
+  const target = new THREE.Vector3(b.cx, H * 0.3, b.cz)
+  const rel = new THREE.Vector3()
+  const solve = () => {
+    let d = 1
+    for (const p of pts) {
+      rel.copy(p).sub(target)
+      const a = rel.dot(dir)
+      d = Math.max(d, a + Math.abs(rel.dot(right)) / tx, a + Math.abs(rel.dot(up)) / ty)
+    }
+    return d
+  }
+  let dist = solve()
+  for (let i = 0; i < 8; i++) {
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity
+    for (const p of pts) {
+      rel.copy(p).sub(target)
+      const depth = dist - rel.dot(dir)
+      const nx = rel.dot(right) / (depth * tx), ny = rel.dot(up) / (depth * ty)
+      x0 = Math.min(x0, nx); x1 = Math.max(x1, nx); y0 = Math.min(y0, ny); y1 = Math.max(y1, ny)
+    }
+    target.addScaledVector(right, ((x0 + x1) / 2) * dist * tx).addScaledVector(up, ((y0 + y1) / 2) * dist * ty)
+    target.y = clamp(target.y, 0, H) // the camera rig keeps the pivot inside the room's height
+    dist = solve()
+  }
+  return { pos: at(target, az, el, dist), target, dist }
+}
+
 export interface DefaultView { pose: Pose; intro: Pose; fit: number }
 
 /**
@@ -36,7 +94,8 @@ export function defaultView(scene: Scene, itemsById: Map<string, Item>, aspect: 
   const b = roomBounds(room)
   const H = room.height
   const rad = Math.hypot(b.w / 2, b.d / 2, H / 2)
-  const fit = fitDistance(rad, aspect) * 0.88
+  // rough distance, only used to compare the candidate angles (the exact framing is solved once the angle is chosen)
+  const rough = fitDistance(rad, aspect) * 0.88
   const target = new THREE.Vector3(b.cx, H * 0.14, b.cz)
   const el = 46 * RAD
 
@@ -56,7 +115,7 @@ export function defaultView(scene: Scene, itemsById: Map<string, Item>, aspect: 
   let best = { az: 0, score: -Infinity }
   for (let a = 0; a < 360; a += 10) {
     const az = a * RAD
-    const cam = at(target, az, el, fit)
+    const cam = at(target, az, el, rough)
     let score = 0
     for (const k of placedKeys) {
       const dx = cam.x - k.x, dz = cam.z - k.z
@@ -75,11 +134,14 @@ export function defaultView(scene: Scene, itemsById: Map<string, Item>, aspect: 
   const q = new URLSearchParams(window.location.search).get('cam')?.split(',').map(Number)
   if (q && q.length === 6 && q.every(Number.isFinite)) {
     const p = { pos: new THREE.Vector3(q[0], q[1], q[2]), target: new THREE.Vector3(q[3], q[4], q[5]) }
-    return { pose: p, intro: p, fit }
+    return { pose: p, intro: p, fit: p.pos.distanceTo(p.target) }
   }
+  const framed = frameRoom(scene, best.az, el, aspect)
+  const fit = framed.dist
+  const t0 = framed.target.clone().setY(H * 0.1)
   return {
-    pose: { pos: at(target, best.az, el, fit), target },
-    intro: { pos: at(target.clone().setY(H * 0.1), best.az + 60 * RAD, 64 * RAD, fit * 1.4), target: target.clone().setY(H * 0.1) },
+    pose: { pos: framed.pos, target: framed.target },
+    intro: { pos: at(t0, best.az + 60 * RAD, 64 * RAD, fit * 1.4), target: t0 },
     fit,
   }
 }

@@ -137,11 +137,20 @@ export function RoomWalls({ room, wallColor }: { room: Room; wallColor: string }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   )
-  useEffect(() => { (mats.wall as THREE.MeshStandardMaterial).color.copy(safeColor(wallColor, '#f7f3ec')) }, [wallColor, mats])
+  // the wall colour eases to a new choice (snaps when the user prefers reduced motion)
+  const wallTarget = useMemo(() => safeColor(wallColor, '#f7f3ec'), [wallColor])
+  useEffect(() => {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) (mats.wall as THREE.MeshStandardMaterial).color.copy(wallTarget)
+  }, [wallTarget, mats])
 
   const shadowMat = useMemo(() => new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false, side: THREE.DoubleSide }), [])
 
   useFrame((_, dt) => {
+    const wm = mats.wall as THREE.MeshStandardMaterial
+    if (wm.color.r !== wallTarget.r || wm.color.g !== wallTarget.g || wm.color.b !== wallTarget.b) {
+      wm.color.lerp(wallTarget, 1 - Math.exp(-Math.min(dt, 0.1) / 0.12))
+      if (Math.abs(wm.color.r - wallTarget.r) + Math.abs(wm.color.g - wallTarget.g) + Math.abs(wm.color.b - wallTarget.b) < 0.004) wm.color.copy(wallTarget)
+    }
     infos.forEach((info, i) => {
       const g = groups.current[i]
       if (!g) return
